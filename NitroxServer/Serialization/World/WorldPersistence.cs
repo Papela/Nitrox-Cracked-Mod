@@ -71,7 +71,7 @@ namespace NitroxServer.Serialization.World
                 Serializer.Serialize(Path.Combine(saveDir, $"PlayerData{FileEnding}"), persistedData.PlayerData);
                 Serializer.Serialize(Path.Combine(saveDir, $"WorldData{FileEnding}"), persistedData.WorldData);
                 Serializer.Serialize(Path.Combine(saveDir, $"EntityData{FileEnding}"), persistedData.EntityData);
-                Serializer.Serialize(Path.Combine(saveDir, $"SavedGlobalRoot{FileEnding}"), persistedData.SavedGlobalRoot);
+                Serializer.Serialize(Path.Combine(saveDir, $"GlobalRootData{FileEnding}"), persistedData.GlobalRootData);
 
                 using (config.Update(saveDir))
                 {
@@ -107,7 +107,7 @@ namespace NitroxServer.Serialization.World
                 persistedData.PlayerData = Serializer.Deserialize<PlayerData>(Path.Combine(saveDir, $"PlayerData{FileEnding}"));
                 persistedData.WorldData = Serializer.Deserialize<WorldData>(Path.Combine(saveDir, $"WorldData{FileEnding}"));
                 persistedData.EntityData = Serializer.Deserialize<EntityData>(Path.Combine(saveDir, $"EntityData{FileEnding}"));
-                persistedData.SavedGlobalRoot = Serializer.Deserialize<SavedGlobalRoot>(Path.Combine(saveDir, $"SavedGlobalRoot{FileEnding}"));
+                persistedData.GlobalRootData = Serializer.Deserialize<SavedGlobalRoot>(Path.Combine(saveDir, $"GlobalRootData{FileEnding}"));
 
                 if (!persistedData.IsValid())
                 {
@@ -165,7 +165,7 @@ namespace NitroxServer.Serialization.World
                     ParsedBatchCells = new List<NitroxInt3>(),
                     Seed = config.Seed
                 },
-                SavedGlobalRoot = new() { Builds = new(), Modules = new(), Ghosts = new() }
+                GlobalRootData = new()
             };
 
             return CreateWorld(pWorldData, config.GameMode);
@@ -194,7 +194,7 @@ namespace NitroxServer.Serialization.World
                 PlayerManager = new PlayerManager(pWorldData.PlayerData.GetPlayers(), config),
 
                 BaseManager = new BaseManager(pWorldData.BaseData.PartiallyConstructedPieces, pWorldData.BaseData.CompletedBasePieceHistory),
-                BuildingManager = new(pWorldData.SavedGlobalRoot),
+                BuildingManager = new(pWorldData.GlobalRootData),
 
                 InventoryManager = new InventoryManager(pWorldData.WorldData.InventoryData.StorageSlotItems),
 

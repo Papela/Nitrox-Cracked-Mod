@@ -22,7 +22,7 @@ namespace NitroxServer.Serialization.World
         public EntityData EntityData { get; set; }
 
         [JsonProperty, ProtoMember(5)]
-        public SavedGlobalRoot SavedGlobalRoot { get; set; }
+        public SavedGlobalRoot GlobalRootData { get; set; }
 
         public static PersistedWorldData From(World world)
         {
@@ -38,7 +38,7 @@ namespace NitroxServer.Serialization.World
                     GameData = GameData.From(world.GameData.PDAState, world.GameData.StoryGoals, world.ScheduleKeeper, world.StoryManager, world.TimeKeeper),
                     Seed = world.Seed
                 },
-                SavedGlobalRoot = world.BuildingManager.GlobalRoot
+                GlobalRootData = world.BuildingManager.GlobalRoot
             };
         }
 
@@ -48,7 +48,7 @@ namespace NitroxServer.Serialization.World
                    BaseData != null &&
                    PlayerData != null &&
                    EntityData != null &&
-                   SavedGlobalRoot != null;
+                   GlobalRootData != null;
         }
     }
 }
