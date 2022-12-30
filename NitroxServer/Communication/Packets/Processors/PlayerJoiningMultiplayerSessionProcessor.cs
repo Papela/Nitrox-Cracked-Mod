@@ -72,6 +72,7 @@ namespace NitroxServer.Communication.Packets.Processors
                 assignedEscapePodId,
                 equippedItems,
                 world.BaseManager.GetBasePiecesForNewlyConnectedPlayer(),
+                world.BuildingManager.GlobalRoot,
                 world.InventoryManager.GetAllStorageSlotItems(),
                 player.UsedItems,
                 player.QuickSlotsBinding,

@@ -7,6 +7,7 @@ using NitroxModel.DataStructures.Unity;
 using NitroxModel.DataStructures.Util;
 using NitroxModel.MultiplayerSession;
 using NitroxModel.Server;
+using NitroxModel.DataStructures.GameLogic.Buildings.New;
 
 namespace NitroxModel.Packets
 {
@@ -16,6 +17,7 @@ namespace NitroxModel.Packets
         public NitroxId AssignedEscapePodId { get; }
         public List<EquippedItemData> EquippedItems { get; }
         public List<BasePiece> BasePieces { get; }
+        public SavedGlobalRoot SavedGlobalRoot { get; }
         public List<ItemData> StorageSlotItems { get; }
         public List<NitroxTechType> UsedItems { get; }
         public List<string> QuickSlotsBinding { get; }
@@ -40,6 +42,7 @@ namespace NitroxModel.Packets
             NitroxId assignedEscapePodId,
             IEnumerable<EquippedItemData> equipment,
             IEnumerable<BasePiece> basePieces,
+            SavedGlobalRoot savedGlobalRoot,
             IEnumerable<ItemData> storageSlotItems,
             IEnumerable<NitroxTechType> usedItems,
             IEnumerable<string> quickSlotsBinding,
@@ -62,6 +65,7 @@ namespace NitroxModel.Packets
             FirstTimeConnecting = firstTimeConnecting;
             EquippedItems = equipment.ToList();
             BasePieces = basePieces.ToList();
+            SavedGlobalRoot = savedGlobalRoot;
             StorageSlotItems = storageSlotItems.ToList();
             UsedItems = usedItems.ToList();
             QuickSlotsBinding = quickSlotsBinding.ToList();
@@ -85,6 +89,7 @@ namespace NitroxModel.Packets
             NitroxId assignedEscapePodId,
             List<EquippedItemData> equippedItems,
             List<BasePiece> basePieces,
+            SavedGlobalRoot savedGlobalRoot,
             List<ItemData> storageSlotItems,
             List<NitroxTechType> usedItems,
             List<string> quickSlotsBinding,
@@ -109,6 +114,7 @@ namespace NitroxModel.Packets
             FirstTimeConnecting = firstTimeConnecting;
             EquippedItems = equippedItems;
             BasePieces = basePieces;
+            SavedGlobalRoot = savedGlobalRoot;
             StorageSlotItems = storageSlotItems;
             UsedItems = usedItems;
             QuickSlotsBinding = quickSlotsBinding;
