@@ -153,6 +153,8 @@ namespace NitroxClient.MonoBehaviours
             gameObject.AddComponent<PlayerStatsBroadcaster>();
             gameObject.AddComponent<EntityPositionBroadcaster>();
             gameObject.AddComponent<ThrottledBuilder>();
+            // TODO: Move to this object
+            Player.mainObject.AddComponent<BuildingTester>();
         }
 
         public void StopCurrentSession()
@@ -176,8 +178,6 @@ namespace NitroxClient.MonoBehaviours
             WaitScreen.main.stageProgress.Clear();
             FreezeTime.End(FreezeTime.Id.WaitScreen);
             WaitScreen.main.items.Clear();
-
-            Player.mainObject.AddComponent<BuildingTester>();
 
             PlayerManager remotePlayerManager = NitroxServiceLocator.LocateService<PlayerManager>();
 
