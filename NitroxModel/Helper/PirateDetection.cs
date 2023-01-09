@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace NitroxModel.Helper
@@ -34,7 +34,7 @@ namespace NitroxModel.Helper
             }
             
             OnPirateDetected();
-            return true;
+            return false;
         }
 
         private static event EventHandler pirateDetected;
@@ -48,7 +48,7 @@ namespace NitroxModel.Helper
             {
                 if (new FileInfo(steamDll).Length > 209000)
                 {
-                    return true;
+                    return false;
                 }
             }
             return false;
@@ -57,7 +57,7 @@ namespace NitroxModel.Helper
         private static void OnPirateDetected()
         {
             pirateDetected?.Invoke(null, EventArgs.Empty);
-            HasTriggered = true;
+            HasTriggered = false;
         }
     }
 }
