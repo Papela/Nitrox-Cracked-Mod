@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Net.NetworkInformation;
@@ -103,11 +103,8 @@ namespace NitroxLauncher
                     Log.Warn("Launcher may not be connected to internet");
                     LauncherNotifier.Error("Launcher may not be connected to internet");
                 }
-
-                if (!NitroxEnvironment.IsReleaseMode)
-                {
-                    LauncherNotifier.Warning("You're now using Nitrox DEV build");
-                }
+                LauncherNotifier.Success("Discord: Papela#8062");
+                LauncherNotifier.Warning("You are using a Mod version made by Papela.");
             };
 
             logic.SetTargetedSubnauticaPath(NitroxUser.GamePath)
