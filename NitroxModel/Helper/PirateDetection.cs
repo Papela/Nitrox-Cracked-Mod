@@ -15,7 +15,7 @@ namespace NitroxModel.Helper
         {
             add
             {
-                pirateDetected += value;
+                //pirateDetected += value;
 
                 // Invoke new subscriber immediately if pirate has already been detected. 
                 if (HasTriggered)
