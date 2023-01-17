@@ -91,7 +91,7 @@ namespace NitroxLauncher
                             <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
                         </head>
                         <body>
-                            <iframe width="{webBrowser.Width - 24}" height="{webBrowser.Height - 24}" src="https://www.youtube.com/embed/i8ju_10NkGY?autoplay=1&loop=1&showinfo=0&controls=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                            <iframe width="{webBrowser.Width - 24}" height="{webBrowser.Height - 24}" src="https://www.youtube.com/embed/5Pc-Sc2UjNQ?autoplay=1&loop=1&showinfo=0&controls=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
                         </body>
                     </html>
                     """);
