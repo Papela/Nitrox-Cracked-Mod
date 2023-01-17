@@ -1,4 +1,4 @@
-﻿{
+{
     "Nitrox_AddServer": "Añadir servidor",
     "Nitrox_AddServerAdd": "Añadir",
     "Nitrox_AddServerHost": "Dirección:",
@@ -10,9 +10,9 @@
     "Nitrox_DisconnectedSession": "Desconectado del servidor",
     "Nitrox_DiscordAccept": "Aceptar",
     "Nitrox_DiscordDecline": "Cancelar",
-    "Nitrox_DiscordInGame": "Jugando como {PLAYER}",
+    "Nitrox_DiscordInGame": "Jugando como {PLAYER} - (Nitrox Papela Mod)",
     "Nitrox_DiscordInGameState": "Sumergirse en el abismo",
-    "Nitrox_DiscordMainMenuState": "Acechando en el menú",
+    "Nitrox_DiscordMainMenuState": "Acechando en el menú - (Nitrox Papela Mod)",
     "Nitrox_DiscordMultiplayerMenu": "Si quieres unirte a una sesión, pulsa el botón Multiplayer del menú principal",
     "Nitrox_DiscordPressToFocus": "Pulse para desbloquear",
     "Nitrox_DiscordRequestText": "Solicita unirse a la sesión",
