@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NitroxClient.GameLogic.PlayerLogic.PlayerModel.Abstract;
 using NitroxModel.DataStructures.GameLogic.Entities;
 using NitroxModel_Subnautica.DataStructures;
 
@@ -8,17 +9,19 @@ namespace NitroxClient.GameLogic.Spawning.WorldEntities
     {
         private readonly DefaultWorldEntitySpawner defaultEntitySpawner = new DefaultWorldEntitySpawner();
         private readonly CellRootSpawner cellRootSpawner = new CellRootSpawner();
-        private readonly PlayerWorldEntitySpawner playerWorldEntitySpawner = new();
+        private readonly PlayerWorldEntitySpawner playerWorldEntitySpawner;
+        private readonly VehicleWorldEntitySpawner vehicleWorldEntitySpawner = new VehicleWorldEntitySpawner();
         private readonly PlaceholderGroupWorldEntitySpawner prefabWorldEntitySpawner;
         
         private readonly Dictionary<TechType, IWorldEntitySpawner> customSpawnersByTechType = new Dictionary<TechType, IWorldEntitySpawner>();
 
-        public WorldEntitySpawnerResolver()
+        public WorldEntitySpawnerResolver(PlayerManager playerManager, ILocalNitroxPlayer localPlayer)
         {            
             customSpawnersByTechType[TechType.Crash] = new CrashEntitySpawner();
             customSpawnersByTechType[TechType.Reefback] = new ReefbackWorldEntitySpawner(defaultEntitySpawner);
             customSpawnersByTechType[TechType.EscapePod] = new EscapePodWorldEntitySpawner();
             prefabWorldEntitySpawner = new PlaceholderGroupWorldEntitySpawner(defaultEntitySpawner);
+            playerWorldEntitySpawner = new PlayerWorldEntitySpawner(playerManager, localPlayer);
         }
 
         public IWorldEntitySpawner ResolveEntitySpawner(WorldEntity entity)
@@ -36,6 +39,11 @@ namespace NitroxClient.GameLogic.Spawning.WorldEntities
             if (entity is PlayerWorldEntity)
             {
                 return playerWorldEntitySpawner;
+            }
+
+            if (entity is VehicleWorldEntity)
+            {
+                return vehicleWorldEntitySpawner;
             }
             
             TechType techType = entity.TechType.ToUnity();
