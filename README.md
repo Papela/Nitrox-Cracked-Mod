@@ -1,14 +1,14 @@
-
 <p align="center">
     <img src="https://i.imgur.com/ofnNX5z.gif" alt="Nitrox Subnautica Multiplayer Mod" />
 </p>
 
-# Subnautica Nitrox Cracked Mod
-An open-source, multiplayer modification of <a href="https://nitrox.rux.gg">Nitrox</a> mod for the game  <a href="https://unknownworlds.com/subnautica/">Subnautica</a>.
+# Subnautica Nitrox
+An open-source, multiplayer modification for the game <a href="https://unknownworlds.com/subnautica/">Subnautica</a>.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/SubnauticaNitrox/Nitrox)](https://github.com/SubnauticaNitrox/Nitrox/releases)
 [![Translation status](https://hosted.weblate.org/widgets/subnauticanitrox/-/svg-badge.svg)](https://hosted.weblate.org/engage/subnauticanitrox/)
+[![Discord](https://img.shields.io/discord/525437013403631617?logo=discord&logoColor=white)](https://discord.gg/E8B4X9s)
 
 ## FAQ
 
