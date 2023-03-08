@@ -12,10 +12,10 @@ body:
   - type: dropdown
     id: nitrox_version
     attributes:
-      label: Are you on the latest version of Nitrox?
+      label: Are you on the latest version of Nitrox Cracked Mod?
       description: If not, you should try updating first.
       options:
-        - Yes, I'm on the latest release of Nitrox.
+        - Yes, I'm on the latest release of Nitrox Cracked Mod.
         - Yes, I'm on the latest commit of the repo (only for experts).
         - No, I need to download a newer version and try again.
     validations:

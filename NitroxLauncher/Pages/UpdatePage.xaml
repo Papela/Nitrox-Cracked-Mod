@@ -42,7 +42,7 @@
                     <TextBlock FontSize="16" Foreground="White" TextWrapping="Wrap" Margin="0,72,0,0" VerticalAlignment="Top" FontWeight="Bold" TextAlignment="Center" Text="No Update Available"/>
 
                     <TextBlock FontWeight="Normal" FontSize="14"  Foreground="White" TextWrapping="Wrap" Margin="0,98,0,-18" VerticalAlignment="Top" TextAlignment="Center">
-                        <Run Text="You are already using the latest version of Nitrox"/>
+                        <Run Text="You are already using the latest version of Nitrox Cracked Mod"/>
                         <Run Text="{Binding Version, Mode=OneTime, FallbackValue='.'}"/>
                         <LineBreak/>
                         <LineBreak/>
