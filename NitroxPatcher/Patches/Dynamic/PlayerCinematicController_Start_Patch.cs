@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using HarmonyLib;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.MonoBehaviours.Overrides;
@@ -32,6 +32,6 @@ public class PlayerCinematicController_Start_Patch : NitroxPatch, IDynamicPatch
 
     public override void Patch(Harmony harmony)
     {
-        PatchPostfix(harmony, targetMethod);
+        //PatchPostfix(harmony, targetMethod);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using NitroxClient.Communication;
@@ -6,6 +6,7 @@ using NitroxClient.Communication.Abstract;
 using NitroxClient.Communication.MultiplayerSession;
 using NitroxClient.Communication.Packets.Processors.Abstract;
 using NitroxClient.GameLogic;
+using NitroxClient.GameLogic.Bases.New;
 using NitroxClient.GameLogic.ChatUI;
 using NitroxClient.GameLogic.PlayerLogic.PlayerModel.Abstract;
 using NitroxClient.GameLogic.PlayerLogic.PlayerModel.ColorSwap;
@@ -152,6 +153,8 @@ namespace NitroxClient.MonoBehaviours
             gameObject.AddComponent<PlayerStatsBroadcaster>();
             gameObject.AddComponent<EntityPositionBroadcaster>();
             gameObject.AddComponent<ThrottledBuilder>();
+            // TODO: Move to this object
+            Player.mainObject.AddComponent<BuildingTester>();
         }
 
         public void StopCurrentSession()

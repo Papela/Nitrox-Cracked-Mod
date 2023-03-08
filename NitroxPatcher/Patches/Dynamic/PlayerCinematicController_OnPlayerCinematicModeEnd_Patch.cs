@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using HarmonyLib;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.PlayerLogic;
@@ -39,6 +39,6 @@ public class PlayerCinematicController_OnPlayerCinematicModeEnd_Patch : NitroxPa
     public override void Patch(Harmony harmony)
     {
         playerId = Resolve<IMultiplayerSession>().Reservation.PlayerId;
-        PatchPrefix(harmony, targetMethod);
+        //PatchPrefix(harmony, targetMethod);
     }
 }
