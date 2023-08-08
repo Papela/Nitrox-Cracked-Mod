@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NitroxClient.Communication;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
+using NitroxModel_Subnautica.DataStructures;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.Util;
 using NitroxModel.Packets;
@@ -50,7 +52,7 @@ namespace NitroxClient.GameLogic
         {
             GameObject cyclops = NitroxEntity.RequireObjectFrom(id);
             CyclopsDecoyManager decoyManager = cyclops.RequireComponent<CyclopsDecoyManager>();
-            using (packetSender.Suppress<EntityMetadataUpdate>())
+            using (PacketSuppressor<EntityMetadataUpdate>.Suppress())
             {
                 decoyManager.Invoke(nameof(CyclopsDecoyManager.LaunchWithDelay), 3f);
                 decoyManager.decoyLaunchButton.UpdateText();
@@ -65,7 +67,7 @@ namespace NitroxClient.GameLogic
         {
             GameObject cyclops = NitroxEntity.RequireObjectFrom(id);
             CyclopsFireSuppressionSystemButton fireSuppButton = cyclops.RequireComponentInChildren<CyclopsFireSuppressionSystemButton>();
-            using (packetSender.Suppress<CyclopsFireSuppression>())
+            using (PacketSuppressor<CyclopsFireSuppression>.Suppress())
             {
                 // Infos from SubFire.StartSystem
                 fireSuppButton.subFire.StartCoroutine(StartFireSuppressionSystem(fireSuppButton.subFire));
@@ -99,13 +101,16 @@ namespace NitroxClient.GameLogic
         /// <summary>
         /// Called when the player repairs a <see cref="CyclopsDamagePoint"/>. Right now it's not possible to partially repair because it would be difficult to implement.
         /// <see cref="CyclopsDamagePoint"/>s are coupled with <see cref="LiveMixin"/>, which is used with just about anything that has health.
-        /// I would need to hook onto <see cref="LiveMixin.AddHealth(float)"/>, or maybe the repair gun event to catch when something repairs a damage point, which I don't 
-        /// believe is worth the effort. A <see cref="CyclopsDamagePoint"/> is already fully repaired in a little over a second. This can trigger sending 
+        /// I would need to hook onto <see cref="LiveMixin.AddHealth(float)"/>, or maybe the repair gun event to catch when something repairs a damage point, which I don't
+        /// believe is worth the effort. A <see cref="CyclopsDamagePoint"/> is already fully repaired in a little over a second. This can trigger sending
         /// <see cref="CyclopsDamagePointRepaired"/> and <see cref="CyclopsDamage"/> packets
         /// </summary>
         public void OnDamagePointRepaired(SubRoot subRoot, CyclopsDamagePoint damagePoint, float repairAmount)
         {
-            NitroxId subId = NitroxEntity.GetId(subRoot.gameObject);
+            if (!subRoot.TryGetIdOrWarn(out NitroxId subId))
+            {
+                return;
+            }
 
             for (int i = 0; i < subRoot.damageManager.damagePoints.Length; i++)
             {
@@ -124,7 +129,11 @@ namespace NitroxClient.GameLogic
         /// </summary>
         private void BroadcastDamageState(SubRoot subRoot, Optional<DamageInfo> info)
         {
-            NitroxId subId = NitroxEntity.GetId(subRoot.gameObject);
+            if (!subRoot.TryGetIdOrWarn(out NitroxId subId))
+            {
+                return;
+            }
+
             LiveMixin subHealth = subRoot.gameObject.RequireComponent<LiveMixin>();
             if (subHealth.health <= 0)
             {
@@ -134,14 +143,10 @@ namespace NitroxClient.GameLogic
             if (info.HasValue)
             {
                 DamageInfo damage = info.Value;
+                Optional<NitroxId> dealerId = damage.dealer.GetId();
                 // Source of the damage. Used if the damage done to the Cyclops was not calculated on other clients. Currently it's just used to figure out what sounds and
                 // visual effects should be used.
-                damageInfo = new CyclopsDamageInfoData(subId,
-                                                       damage.dealer != null ? NitroxEntity.GetId(damage.dealer) : null,
-                                                       damage.originalDamage,
-                                                       damage.damage,
-                                                       damage.position,
-                                                       damage.type);
+                damageInfo = new CyclopsDamageInfoData(subId, dealerId, damage.originalDamage, damage.damage, damage.position.ToDto(), damage.type);
             }
 
             int[] damagePointIndexes = GetActiveDamagePoints(subRoot).ToArray();
@@ -171,17 +176,23 @@ namespace NitroxClient.GameLogic
         /// </summary>
         private IEnumerable<CyclopsFireData> GetActiveRoomFires(SubFire subFire)
         {
-            NitroxId subRootId = NitroxEntity.GetId(subFire.subRoot.gameObject);
+            if (!subFire.subRoot.TryGetIdOrWarn(out NitroxId subRootId))
+            {
+                yield break;
+            }
+
             foreach (KeyValuePair<CyclopsRooms, SubFire.RoomFire> roomFire in subFire.roomFires)
             {
                 for (int i = 0; i < roomFire.Value.spawnNodes.Length; i++)
                 {
                     if (roomFire.Value.spawnNodes[i].childCount > 0)
                     {
-                        yield return new CyclopsFireData(NitroxEntity.GetId(roomFire.Value.spawnNodes[i].GetComponentInChildren<Fire>().gameObject),
-                            subRootId,
-                            roomFire.Key,
-                            i);
+                        if (!roomFire.Value.spawnNodes[i].GetComponentInChildren<Fire>().TryGetIdOrWarn(out NitroxId fireId))
+                        {
+                            yield break;
+                        }
+
+                        yield return new CyclopsFireData(fireId, subRootId, roomFire.Key, i);
                     }
                 }
             }

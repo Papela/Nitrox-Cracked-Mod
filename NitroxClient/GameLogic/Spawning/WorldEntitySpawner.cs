@@ -16,9 +16,9 @@ namespace NitroxClient.GameLogic.Spawning
         private readonly WorldEntitySpawnerResolver worldEntitySpawnResolver;
         private readonly Dictionary<Int3, BatchCells> batchCellsById;
 
-        public WorldEntitySpawner(PlayerManager playerManager, ILocalNitroxPlayer localPlayer)
+        public WorldEntitySpawner(PlayerManager playerManager, ILocalNitroxPlayer localPlayer, Entities entities)
         {
-            worldEntitySpawnResolver = new WorldEntitySpawnerResolver(playerManager, localPlayer);
+            worldEntitySpawnResolver = new WorldEntitySpawnerResolver(playerManager, localPlayer, entities);
 
             if (NitroxEnvironment.IsNormal)
             {
@@ -35,6 +35,12 @@ namespace NitroxClient.GameLogic.Spawning
             Optional<GameObject> parent = (entity.ParentId != null) ? NitroxEntity.GetObjectFrom(entity.ParentId) : Optional.Empty;
 
             IWorldEntitySpawner entitySpawner = worldEntitySpawnResolver.ResolveEntitySpawner(entity);
+
+            if (entitySpawner is IWorldEntitySyncSpawner syncSpawner &&
+                syncSpawner.SpawnSync(entity, parent, cellRoot, result))
+            {
+                return null;
+            }
 
             return entitySpawner.SpawnAsync(entity, parent, cellRoot, result);
         }

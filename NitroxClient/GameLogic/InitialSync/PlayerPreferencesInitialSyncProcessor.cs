@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using NitroxClient.Communication.Abstract;
-using NitroxClient.GameLogic.InitialSync.Base;
+using NitroxClient.Communication;
+using NitroxClient.GameLogic.InitialSync.Abstract;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures.GameLogic;
@@ -14,12 +14,8 @@ namespace NitroxClient.GameLogic.InitialSync;
 
 public class PlayerPreferencesInitialSyncProcessor : InitialSyncProcessor
 {
-    private readonly IPacketSender packetSender;
-
-    public PlayerPreferencesInitialSyncProcessor(IPacketSender packetSender)
+    public PlayerPreferencesInitialSyncProcessor()
     {
-        this.packetSender = packetSender;
-
         // list of processors which may cause the spawn of Signal pings
         DependentProcessors.AddRange(new[]
         {
@@ -27,8 +23,7 @@ public class PlayerPreferencesInitialSyncProcessor : InitialSyncProcessor
             typeof(GlobalRootInitialSyncProcessor),
             typeof(StoryGoalInitialSyncProcessor),
             typeof(PdaInitialSyncProcessor),
-            typeof(RemotePlayerInitialSyncProcessor),
-            typeof(BuildingInitialSyncProcessor),
+            typeof(RemotePlayerInitialSyncProcessor)
         });
     }
 
@@ -42,7 +37,7 @@ public class PlayerPreferencesInitialSyncProcessor : InitialSyncProcessor
 
     private IEnumerator UpdatePins(InitialPlayerSync packet)
     {
-        using (packetSender.Suppress<RecipePinned>())
+        using (PacketSuppressor<RecipePinned>.Suppress())
         {
             PinManager.main.Deserialize(packet.Preferences.PinnedTechTypes.Select(techType => (TechType)techType).ToList());
         }
@@ -57,7 +52,7 @@ public class PlayerPreferencesInitialSyncProcessor : InitialSyncProcessor
             ModifyPingInstanceIfPossible(instance, pingPreferences, () => UpdateInstance(instance));
             RefreshPingEntryInPDA(instance);
         }
-        
+
         PingManager.onAdd += UpdateInstance;
         GameObject.FindObjectsOfType<PingInstance>().ForEach(UpdateInstance);
         yield break;
@@ -73,8 +68,8 @@ public class PlayerPreferencesInitialSyncProcessor : InitialSyncProcessor
         {
             return;
         }
-        
-        using (packetSender.Suppress<SignalPingPreferenceChanged>())
+
+        using (PacketSuppressor<SignalPingPreferenceChanged>.Suppress())
         {
             // We don't want to set the color for a remote player's signal
             if (!isRemotePlayerPing)
@@ -148,6 +143,6 @@ public class PlayerPreferencesInitialSyncProcessor : InitialSyncProcessor
     private static IEnumerator DelayPingKeyDetection(Action delayedAction)
     {
         yield return Yielders.WaitForHalfSecond;
-        delayedAction();
+        delayedAction?.Invoke();
     }
 }

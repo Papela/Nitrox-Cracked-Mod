@@ -11,7 +11,8 @@
         Title="Nitrox Launcher" Height="642" MinHeight="642" Width="1024" MinWidth="1024" 
         WindowStyle="None" WindowStartupLocation="CenterScreen"
         Closing="OnClosing"
-        Background="Black">
+        Background="Black"
+        Loaded="Window_Loaded">
 
     <Window.Resources>
         <BitmapImage x:Key="SidebarNitroxLogo" UriSource="pack://application:,,,/Assets/Images/nitroxLogo.png" />
@@ -127,7 +128,7 @@
                         </StackPanel>
                     </Button>
                     <TextBlock FontSize="10" Foreground="#FF00FFFF" Text="Mod by Papela" FontWeight="Bold"/>
-                    <TextBlock FontSize="10" Foreground="#FF00FF00" Text="Discord: Papela#8062" FontWeight="Bold"/>
+                    <TextBlock FontSize="10" Foreground="#FF00FF00" Text="Discord: papela" FontWeight="Bold"/>
                 </StackPanel>
             </Grid>
             

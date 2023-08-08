@@ -1,7 +1,5 @@
-using System;
 using System.Text.RegularExpressions;
 using NitroxClient.GameLogic.PlayerLogic;
-using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.Util;
@@ -18,12 +16,12 @@ namespace NitroxClient.GameLogic.Helper
             {
                 return Optional.Of(seamothStorageContainer.container);
             }
-            StorageContainer storageContainer = owner.GetComponentInChildren<StorageContainer>();
+            StorageContainer storageContainer = owner.GetComponentInChildren<StorageContainer>(true);
             if (storageContainer)
             {
                 return Optional.Of(storageContainer.container);
             }
-            BaseBioReactor baseBioReactor = owner.GetComponentInChildren<BaseBioReactor>();
+            BaseBioReactor baseBioReactor = owner.GetComponentInChildren<BaseBioReactor>(true);
             if (baseBioReactor)
             {
                 return Optional.Of(baseBioReactor.container);
@@ -38,37 +36,55 @@ namespace NitroxClient.GameLogic.Helper
                 return Optional.Of(remotePlayerId.RemotePlayer.Inventory);
             }
 
-            Log.Debug($"Couldn't resolve container from gameObject: {owner.name}");
-
             return Optional.Empty;
         }
 
 
-        public static NitroxId GetOwnerId(Transform ownerTransform)
+        public static bool TryGetOwnerId(Transform ownerTransform, out NitroxId ownerId)
         {
-            if (Regex.IsMatch(ownerTransform.gameObject.name, @"Locker0([0-9])StorageRoot$", RegexOptions.IgnoreCase))
+            Transform parent = ownerTransform.parent;
+            if (!parent)
+            {
+                Log.Error("Trying to get the ownerId of a storage that doesn't have a parent");
+                ownerId = null;
+                return false;
+            }
+
+            if (parent.GetComponent<Constructable>() || parent.GetComponent<IBaseModule>() != null)
+            {
+                return parent.TryGetIdOrWarn(out ownerId);
+            }
+            else if (parent.TryGetComponentInParent(out LargeRoomWaterPark largeRoomWaterPark) &&
+                parent.TryGetNitroxId(out ownerId))
+            {
+                return true;
+            }
+            else if (Regex.IsMatch(ownerTransform.gameObject.name, @"Locker0([0-9])StorageRoot$", RegexOptions.IgnoreCase))
             {
                 string lockerId = ownerTransform.gameObject.name.Substring(7, 1);
-                GameObject locker = ownerTransform.parent.gameObject.FindChild($"submarine_locker_01_0{lockerId}");
+                GameObject locker = parent.gameObject.FindChild($"submarine_locker_01_0{lockerId}");
                 if (!locker)
                 {
-                    throw new Exception($"Could not find Locker Object: submarine_locker_01_0{lockerId}");
+                    Log.Error($"Could not find Locker Object: submarine_locker_01_0{lockerId}");
+                    ownerId = null;
+                    return false;
                 }
-                StorageContainer storageContainer = locker.GetComponentInChildren<StorageContainer>();
-                if (!storageContainer)
+                if (!locker.TryGetComponentInChildren(out StorageContainer storageContainer, true))
                 {
-                    throw new Exception($"Could not find {nameof(StorageContainer)} From Object: submarine_locker_01_0{lockerId}");
+                    Log.Error($"Could not find {nameof(StorageContainer)} From Object: submarine_locker_01_0{lockerId}");
+                    ownerId = null;
+                    return false;
                 }
 
-                return NitroxEntity.GetId(storageContainer.gameObject);
+                return storageContainer.TryGetIdOrWarn(out ownerId);
             }
-            if (ownerTransform.parent.name.StartsWith("EscapePod"))
+            else if (parent.name.StartsWith("EscapePod"))
             {
-                StorageContainer storageContainer = ownerTransform.parent.gameObject.RequireComponentInChildren<StorageContainer>();
-                return NitroxEntity.GetId(storageContainer.gameObject);
+                StorageContainer storageContainer = parent.RequireComponentInChildren<StorageContainer>(true);
+                return storageContainer.TryGetIdOrWarn(out ownerId);
             }
 
-            return NitroxEntity.GetId(ownerTransform.parent.gameObject);
+            return parent.TryGetIdOrWarn(out ownerId);
         }
     }
 }

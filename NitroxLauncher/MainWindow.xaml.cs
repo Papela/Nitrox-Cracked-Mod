@@ -7,11 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using NitroxLauncher.Models.Events;
 using NitroxLauncher.Models.Properties;
 using NitroxLauncher.Pages;
 using NitroxModel.Discovery;
 using NitroxModel.Helper;
+using NitroxModel.Platforms.OS.Windows;
 
 namespace NitroxLauncher
 {
@@ -41,7 +43,7 @@ namespace NitroxLauncher
         {
             Log.Setup();
             LauncherNotifier.Setup();
-            
+
             logic = new LauncherLogic();
 
             MaxHeight = SystemParameters.VirtualScreenHeight;
@@ -66,15 +68,14 @@ namespace NitroxLauncher
                                     MessageBoxImage.Error);
                     Environment.Exit(1);
                 }
-                
 
                 if (!NetworkInterface.GetIsNetworkAvailable())
                 {
                     Log.Warn("Launcher may not be connected to internet");
                     LauncherNotifier.Error("Launcher may not be connected to internet");
                 }
-                LauncherNotifier.Success("Discord: Papela#8062");
-                LauncherNotifier.Warning("You are using a Mod version made by Papela.");
+                LauncherNotifier.Success("You are using a Mod version made by Papela.");
+                LauncherNotifier.Warning("Discord: papela");
 
                 if (!NitroxEnvironment.IsReleaseMode)
                 {
@@ -187,6 +188,11 @@ namespace NitroxLauncher
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            WindowsApi.EnableDefaultWindowAnimations(new WindowInteropHelper(this).Handle);
         }
     }
 }

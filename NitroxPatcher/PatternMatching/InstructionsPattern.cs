@@ -135,6 +135,3 @@ public class InstructionsPattern : IEnumerable<InstructionPattern>
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
-
-
-

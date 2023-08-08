@@ -13,13 +13,20 @@ namespace NitroxClient.GameLogic.Spawning.WorldEntities;
 
 public class VehicleWorldEntitySpawner : IWorldEntitySpawner
 {
+    private readonly Entities entities;
+
+    public VehicleWorldEntitySpawner(Entities entities)
+    {
+        this.entities = entities;
+    }
+
     // The constructor has mixed results when the remote player is a long distance away.  UWE even has a built in distance tracker to ensure
     // that they are within allowed range.  However, this range is a bit restrictive. We will allow constructor spawning up to a specified 
     // distance - anything more will simply use world spawning (no need to play the animation anyways).
     private const float ALLOWED_CONSTRUCTOR_DISTANCE = 100.0f;
 
     public IEnumerator SpawnAsync(WorldEntity entity, Optional<GameObject> parent, EntityCell cellRoot, TaskResult<Optional<GameObject>> result)
-    { 
+    {
         VehicleWorldEntity vehicleEntity = (VehicleWorldEntity)entity;
 
         bool withinConstructorSpawnWindow = (DayNightCycle.main.timePassedAsFloat - vehicleEntity.ConstructionTime) < GetCraftDuration(vehicleEntity.TechType.ToUnity());
@@ -33,6 +40,7 @@ public class VehicleWorldEntitySpawner : IWorldEntitySpawner
 
             if (constructor && withinDistance)
             {
+                Log.Debug("SpawnViaConstructor");
                 MobileVehicleBay.TransmitLocalSpawns = false;
                 yield return SpawnViaConstructor(vehicleEntity, constructor, result);
                 MobileVehicleBay.TransmitLocalSpawns = true;
@@ -48,7 +56,8 @@ public class VehicleWorldEntitySpawner : IWorldEntitySpawner
         TechType techType = vehicleEntity.TechType.ToUnity();
         GameObject gameObject = null;
 
-        if (techType == TechType.Cyclops)
+        bool isCyclops = techType == TechType.Cyclops;
+        if (isCyclops)
         {
             GameObject prefab = null;
             LightmappedPrefabs.main.RequestScenePrefab("cyclops", (go) => prefab = go);
@@ -88,7 +97,7 @@ public class VehicleWorldEntitySpawner : IWorldEntitySpawner
 
         yield return Yielders.WaitForEndOfFrame;
 
-        Vehicles.RemoveNitroxEntityTagging(gameObject);
+        Vehicles.RemoveNitroxEntitiesTagging(gameObject);
 
         NitroxEntity.SetNewId(gameObject, vehicleEntity.Id);
 
@@ -118,6 +127,8 @@ public class VehicleWorldEntitySpawner : IWorldEntitySpawner
 
         NitroxEntity.SetNewId(constructedObject, vehicleEntity.Id);
 
+        AddCinematicControllers(constructedObject);
+
         result.Set(constructedObject);
         yield break;
     }
@@ -132,7 +143,7 @@ public class VehicleWorldEntitySpawner : IWorldEntitySpawner
             return;
         }
 
-        PlayerCinematicController[] controllers = gameObject.GetComponentsInChildren<PlayerCinematicController>();
+        PlayerCinematicController[] controllers = gameObject.GetComponentsInChildren<PlayerCinematicController>(true);
 
         if (controllers.Length == 0)
         {
@@ -170,7 +181,7 @@ public class VehicleWorldEntitySpawner : IWorldEntitySpawner
             return;
         }
 
-        VehicleDockingBay dockingBay = parent.GetComponentInChildren<VehicleDockingBay>();
+        VehicleDockingBay dockingBay = parent.GetComponentInChildren<VehicleDockingBay>(true);
 
         if (!dockingBay)
         {

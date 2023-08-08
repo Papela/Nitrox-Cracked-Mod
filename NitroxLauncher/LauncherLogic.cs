@@ -194,8 +194,6 @@ namespace NitroxLauncher
                 throw new Exception("Location of Subnautica is unknown. Set the path to it in settings.");
             }
 
-            
-
 #if RELEASE
             if (Process.GetProcessesByName("Subnautica").Length > 0)
             {
