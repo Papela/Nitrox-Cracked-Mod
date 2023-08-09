@@ -6,7 +6,7 @@
 An open-source, multiplayer modification of <a href="https://nitrox.rux.gg">Nitrox</a> mod for the game  <a href="https://unknownworlds.com/subnautica/">Subnautica</a>.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/SubnauticaNitrox/Nitrox)](https://github.com/SubnauticaNitrox/Nitrox/releases)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/Papela/Nitrox-Cracked-Mod)](https://github.com/SubnauticaNitrox/Nitrox/releases)
 [![Translation status](https://hosted.weblate.org/widgets/subnauticanitrox/-/svg-badge.svg)](https://hosted.weblate.org/engage/subnauticanitrox/)
 
 ## FAQ
