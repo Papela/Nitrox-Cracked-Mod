@@ -1,5 +1,5 @@
 using System.Collections;
-using NitroxClient.GameLogic.InitialSync.Base;
+using NitroxClient.GameLogic.InitialSync.Abstract;
 using NitroxClient.MonoBehaviours;
 using NitroxModel.Core;
 using NitroxModel.DataStructures;
@@ -59,6 +59,11 @@ namespace NitroxClient.GameLogic.InitialSync
         {
             if (firstTimeConnecting)
             {
+                if (!Player.main.TryGetIdOrWarn(out NitroxId localPlayerId))
+                {
+                    yield break;
+                }
+
                 foreach (TechType techType in LootSpawner.main.GetEscapePodStorageTechTypes())
                 {
                     TaskResult<GameObject> result = new TaskResult<GameObject>();
@@ -68,7 +73,7 @@ namespace NitroxClient.GameLogic.InitialSync
                     pickupable.Initialize();
 
                     item.Created(gameObject);
-                    itemContainers.AddItem(gameObject, NitroxEntity.GetId(Player.main.gameObject));
+                    itemContainers.AddItem(gameObject, localPlayerId);
                 }
             }
         }

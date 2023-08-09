@@ -1,12 +1,17 @@
+using NitroxClient.Communication;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.Helper;
 using NitroxClient.GameLogic.PlayerLogic;
+using NitroxClient.GameLogic.Spawning.Metadata.Extractor;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures;
+using NitroxModel.DataStructures.GameLogic.Entities.Metadata;
+using NitroxModel.DataStructures.GameLogic.Entities;
 using NitroxModel.DataStructures.Util;
 using NitroxModel.Packets;
 using UnityEngine;
+using NitroxModel_Subnautica.DataStructures;
 
 namespace NitroxClient.GameLogic
 {
@@ -27,11 +32,18 @@ namespace NitroxClient.GameLogic
                 return;
             }
 
-            NitroxId itemId = NitroxEntity.GetId(pickupable.gameObject);
+            if (!pickupable.TryGetIdOrWarn(out NitroxId itemId))
+            {
+                return;
+            }
 
-            EntityReparented reparented = new EntityReparented(itemId, InventoryContainerHelper.GetOwnerId(containerTransform));
-
-            if (packetSender.Send(reparented))
+            if (!InventoryContainerHelper.TryGetOwnerId(containerTransform, out NitroxId ownerId))
+            {
+                // Error logging is done in the function
+                return;
+            }
+            
+            if (packetSender.Send(new EntityReparented(itemId, ownerId)))
             {
                 Log.Debug($"Sent: Added item ({itemId}) of type {pickupable.GetTechType()} to container {containerTransform.gameObject.GetFullHierarchyPath()}");
             }
@@ -54,12 +66,31 @@ namespace NitroxClient.GameLogic
 
             ItemsContainer container = opContainer.Value;
             Pickupable pickupable = item.RequireComponent<Pickupable>();
-            
-            using (packetSender.Suppress<EntityReparented>())
+
+            using (PacketSuppressor<EntityReparented>.Suppress())
             {
                 container.UnsafeAdd(new InventoryItem(pickupable));
                 Log.Debug($"Received: Added item {pickupable.GetTechType()} to container {owner.Value.GetFullHierarchyPath()}");
             }
+        }
+
+        public void BroadcastBatteryAdd(GameObject gameObject, GameObject parent, TechType techType)
+        {
+            if (!gameObject.TryGetIdOrWarn(out NitroxId id))
+            {
+                return;
+            }
+            if (!parent.TryGetIdOrWarn(out NitroxId parentId))
+            {
+                return;
+            }
+
+            Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(gameObject);
+
+            InstalledBatteryEntity installedBattery = new(id, techType.ToDto(), metadata.OrNull(), parentId, new());
+
+            EntitySpawnedByClient spawnedPacket = new EntitySpawnedByClient(installedBattery);
+            packetSender.Send(spawnedPacket);
         }
     }
 }

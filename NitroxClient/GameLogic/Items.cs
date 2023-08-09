@@ -1,3 +1,4 @@
+using System;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.MonoBehaviours;
 using NitroxModel.DataStructures;
@@ -13,150 +14,195 @@ using NitroxClient.GameLogic.Spawning.Metadata.Extractor;
 using NitroxModel.DataStructures.GameLogic;
 using System.Linq;
 using NitroxClient.Unity.Helper;
+using NitroxClient.GameLogic.Helper;
 
-namespace NitroxClient.GameLogic
+namespace NitroxClient.GameLogic;
+
+public class Items
 {
-    public class Items
+    private readonly IPacketSender packetSender;
+    private readonly IMap map;
+    private readonly Entities entities;
+
+    public Items(IPacketSender packetSender, IMap map, Entities entities)
     {
-        private readonly IPacketSender packetSender;
-        private readonly IMap map;
-        private readonly Entities entities;
+        this.packetSender = packetSender;
+        this.map = map;
+        this.entities = entities;
+    }
 
-        public Items(IPacketSender packetSender, IMap map, Entities entities)
+    public void UpdatePosition(NitroxId id, Vector3 location, Quaternion rotation)
+    {
+        ItemPosition itemPosition = new ItemPosition(id, location.ToDto(), rotation.ToDto());
+        packetSender.Send(itemPosition);
+    }
+
+    public void PickedUp(GameObject gameObject, TechType techType)
+    {
+        // We want to remove any remote tracking immediately on pickup as it can cause weird behavior like holding a ghost item still in the world.
+        RemoveAnyRemoteControl(gameObject);
+
+        if (!gameObject.TryGetNitroxId(out NitroxId id))
         {
-            this.packetSender = packetSender;
-            this.map = map;
-            this.entities = entities;
+            Log.Debug($"Found item with ({gameObject.name}) with no id, assigning a new one");
+            id = NitroxEntity.GenerateNewId(gameObject);
         }
 
-        public void UpdatePosition(NitroxId id, Vector3 location, Quaternion rotation)
+        EntityPositionBroadcaster.StopWatchingEntity(id);
+
+        InventoryItemEntity inventoryItemEntity = ConvertToInventoryItemEntity(gameObject);
+
+        // Some picked up entities are not known by the server for several reasons.  First it can be picked up via a spawn item command.  Another
+        // example is that some obects are not 'real' objects until they are clicked and end up spawning a prefab.  For example, the fire extinguisher
+        // in the escape pod (mono: IntroFireExtinguisherHandTarget) or Creepvine seeds (mono: PickupPrefab).  When clicked, these spawn new prefabs
+        // directly into the player's inventory.  These will ultimately be registered server side with the above inventoryItemEntity.
+        entities.MarkAsSpawned(inventoryItemEntity);
+
+        Log.Debug($"PickedUp {id} {techType}");
+
+        PickupItem pickupItem = new(id, inventoryItemEntity);
+        packetSender.Send(pickupItem);
+    }
+
+    /// <summary>
+    /// Tracks the object (as dropped) and notifies the server to spawn the item for other players.
+    /// </summary>
+    public void Dropped(GameObject gameObject, TechType? techType = null)
+    {
+        techType ??= CraftData.GetTechType(gameObject);// there is a theoretical possibility of a stray remote tracking packet that re-adds the monobehavior, this is purely a safety call.
+        RemoveAnyRemoteControl(gameObject);
+
+        NitroxId id = NitroxEntity.GetIdOrGenerateNew(gameObject);
+        Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(gameObject);
+        bool inGlobalRoot = map.GlobalRootTechTypes.Contains(techType.Value.ToDto());
+        string classId = gameObject.GetComponent<PrefabIdentifier>().ClassId;
+
+        WorldEntity droppedItem = new(gameObject.transform.ToWorldDto(), 0, classId, inGlobalRoot, id, techType.Value.ToDto(), metadata.OrNull(), null, new List<Entity>())
         {
-            ItemPosition itemPosition = new ItemPosition(id, location.ToDto(), rotation.ToDto());
-            packetSender.Send(itemPosition);
+            ChildEntities = GetPrefabChildren(gameObject, id).ToList()
+        };
+
+        // There are two specific cases which we need to notice:
+        // 1. If the item is dropped in a WaterPark
+        if (gameObject.GetComponent<Pickupable>() && TryGetCurrentWaterParkId(out NitroxId waterParkId))
+        {
+            droppedItem.ParentId = waterParkId;
+            // We cast it to an entity type that is always seeable by clients
+            // therefore, the packet will be redirected to everyone
+            droppedItem = GlobalRootEntity.From(droppedItem);
         }
-
-        public void PickedUp(GameObject gameObject, TechType techType)
+        else
         {
-            // We want to remove any remote tracking immediately on pickup as it can cause weird behavior like holding a ghost item still in the world.
-            RemoveAnyRemoteControl(gameObject);
-
-            NitroxId id = NitroxEntity.GetId(gameObject);
-
-            // Some picked up entities are not known by the server for several reasons.  First it can be picked up via a spawn item command.  Another
-            // example is that some obects are not 'real' objects until they are clicked and end up spawning a prefab.  For example, the fire extinguisher
-            // in the escape pod (mono: IntroFireExtinguisherHandTarget) or Creepvine seeds (mono: PickupPrefab).  When clicked, these spawn new prefabs
-            // directly into the player's inventory.  In this pickup function, we can let the server know about this by sending an EntitySpawn packet; 
-            // however, the disavantage with doing this in one place is that other players may not 'see' the action (such as picking creepvine fruit). 
-            // This may be intended for things like the fire extinguisher because it lets all players get it.  As we sync these actions, this statement
-            // will no longer be true and will no longer send a created packet. 
-            if (!entities.IsKnownEntity(id))
+            // 2. You can't drop items in bases but you can place small objects like figures and posters which are put right under the base object
+            // NB: They are recognizable by their PlaceTool from which the Place() function executes the current code
+            SubRoot currentSub = Player.main.GetCurrentSub();
+            if (currentSub && currentSub.TryGetNitroxId(out NitroxId parentId))
             {
-                Created(gameObject);
-            }
-
-            Vector3 itemPosition = gameObject.transform.position;
-
-            Log.Info($"PickedUp {id} {techType}");
-
-            PickupItem pickupItem = new PickupItem(itemPosition.ToDto(), id, techType.ToDto());
-            packetSender.Send(pickupItem);
-        }
-
-        public void Dropped(GameObject gameObject, TechType techType)
-        {
-            // there is a theoretical possibility of a stray remote tracking packet that re-adds the monobehavior, this is purely a safety call.
-            RemoveAnyRemoteControl(gameObject);
-
-            Optional<NitroxId> waterparkId = GetCurrentWaterParkId();
-            NitroxId id = NitroxEntity.GetId(gameObject);
-            Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(gameObject);
-
-            bool inGlobalRoot = map.GlobalRootTechTypes.Contains(techType.ToDto());
-            string classId = gameObject.GetComponent<PrefabIdentifier>().ClassId;
-
-            WorldEntity droppedItem = new WorldEntity(gameObject.transform.ToWorldDto(), 0, classId, inGlobalRoot, waterparkId.OrNull(), false, id, techType.ToDto(), metadata.OrNull(), null, new List<Entity>());
-            droppedItem.ChildEntities = GetPrefabChildren(gameObject, id).ToList();
-
-            Log.Debug($"Dropping item: {droppedItem}");
-
-            EntitySpawnedByClient spawnedPacket = new EntitySpawnedByClient(droppedItem);
-            packetSender.Send(spawnedPacket);
-        }
-
-        public void Created(GameObject gameObject)
-        {
-            NitroxId itemId = NitroxEntity.GetId(gameObject);
-            string classId = gameObject.RequireComponent<PrefabIdentifier>().ClassId;
-            TechType techType = gameObject.RequireComponent<Pickupable>().GetTechType();
-            Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(gameObject);
-            List<Entity> children = GetPrefabChildren(gameObject, itemId).ToList();
-
-            // Newly created objects are always placed into the player's inventory.
-            NitroxId ownerId = NitroxEntity.GetId(Player.main.gameObject);
-
-            InventoryItemEntity inventoryItemEntity = new(itemId, classId, techType.ToDto(), metadata.OrNull(), ownerId, children);
-            entities.MarkAsSpawned(inventoryItemEntity);
-
-            if (packetSender.Send(new EntitySpawnedByClient(inventoryItemEntity)))
-            {
-                Log.Debug($"Creation of item {techType} into the player's inventory {inventoryItemEntity}");
+                droppedItem.ParentId = parentId;
             }
         }
+        Log.Debug($"Dropping item: {droppedItem}");
 
+        packetSender.Send(new EntitySpawnedByClient(droppedItem));
+    }
 
-        // This function will record any notable children of the dropped item as a PrefabChildEntity.  In this case, a 'notable' 
-        // child is one that UWE has tagged with a PrefabIdentifier (class id) and has entity metadata that can be extracted. An
-        // example would be recording a Battery PrefabChild inside of a Flashlight WorldEntity. 
-        public static IEnumerable<Entity> GetPrefabChildren(GameObject gameObject, NitroxId parentId)
+    public void Created(GameObject gameObject)
+    {
+        InventoryItemEntity inventoryItemEntity = ConvertToInventoryItemEntity(gameObject);
+        entities.MarkAsSpawned(inventoryItemEntity);
+
+        if (packetSender.Send(new EntitySpawnedByClient(inventoryItemEntity)))
         {
-            foreach (IGrouping<string, PrefabIdentifier> prefabGroup in gameObject.GetAllComponentsInChildren<PrefabIdentifier>()
-                                                                                 .Where(prefab => prefab.gameObject != gameObject)
-                                                                                 .GroupBy(prefab => prefab.classId))
-            {
-                int indexInGroup = 0;
+            Log.Debug($"Creation of item {gameObject.name} into the player's inventory {inventoryItemEntity}");
+        }
+    }
 
-                foreach (PrefabIdentifier prefab in prefabGroup)
+    // This function will record any notable children of the dropped item as a PrefabChildEntity.  In this case, a 'notable'
+    // child is one that UWE has tagged with a PrefabIdentifier (class id) and has entity metadata that can be extracted. An
+    // example would be recording a Battery PrefabChild inside of a Flashlight WorldEntity.
+    public static IEnumerable<Entity> GetPrefabChildren(GameObject gameObject, NitroxId parentId)
+    {
+        foreach (IGrouping<string, PrefabIdentifier> prefabGroup in gameObject.GetAllComponentsInChildren<PrefabIdentifier>()
+                                                                              .Where(prefab => prefab.gameObject != gameObject)
+                                                                              .GroupBy(prefab => prefab.classId))
+        {
+            int indexInGroup = 0;
+
+            foreach (PrefabIdentifier prefab in prefabGroup)
+            {
+                NitroxId id = NitroxEntity.GetIdOrGenerateNew(prefab.gameObject); // We do this here bc a MetadataExtractor could be requiring the id to increment or so
+                Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(prefab.gameObject);
+
+                if (metadata.HasValue)
                 {
-                    Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(prefab.gameObject);
+                    TechTag techTag = prefab.gameObject.GetComponent<TechTag>();
+                    TechType techType = (techTag) ? techTag.type : TechType.None;
 
-                    if (metadata.HasValue)
-                    {
-                        NitroxId id = NitroxEntity.GetId(prefab.gameObject);
-                        TechTag techTag = prefab.gameObject.GetComponent<TechTag>();
-                        TechType techType = (techTag) ? techTag.type : TechType.None;
+                    yield return new PrefabChildEntity(id, prefab.classId, techType.ToDto(), indexInGroup, metadata.Value, parentId);
 
-                        yield return new PrefabChildEntity(id, prefab.classId, techType.ToDto(), indexInGroup, metadata.Value, parentId);
-
-                        indexInGroup++;
-                    }
+                    indexInGroup++;
                 }
             }
         }
+    }
 
-        private void RemoveAnyRemoteControl(GameObject gameObject)
+    public static InventoryItemEntity ConvertToInventoryItemEntity(GameObject gameObject)
+    {
+        NitroxId itemId = NitroxEntity.GetIdOrGenerateNew(gameObject); // id may not exist, create if missing
+        string classId = gameObject.RequireComponent<PrefabIdentifier>().ClassId;
+        TechType techType = gameObject.RequireComponent<Pickupable>().GetTechType();
+        Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(gameObject);
+        List<Entity> children = GetPrefabChildren(gameObject, itemId).ToList();
+
+        // Newly created objects are always placed into the player's inventory.
+        if (!Player.main.TryGetNitroxId(out NitroxId ownerId))
         {
-            // Some items might be remotely simulated if they were dropped by other players.  We'll want to remove
-            // any remote tracking when we actively handle the item. 
-            RemotelyControlled remotelyControlled = gameObject.GetComponent<RemotelyControlled>();
-            Object.Destroy(remotelyControlled);
+            throw new InvalidOperationException("[Items] Player has no id! Couldn't parent InventoryItem.");
         }
 
-        private Optional<NitroxId> GetCurrentWaterParkId()
-        {
-            Player player = Utils.GetLocalPlayer().GetComponent<Player>();
+        InventoryItemEntity inventoryItemEntity = new(itemId, classId, techType.ToDto(), metadata.OrNull(), ownerId, children);
+        BatteryChildEntityHelper.TryPopulateInstalledBattery(gameObject, inventoryItemEntity.ChildEntities, itemId);
 
-            if (player != null)
+        return inventoryItemEntity;
+    }
+
+    /// <summary>
+    /// Some items might be remotely simulated if they were dropped by other players.  We'll want to remove
+    /// any remote tracking when we actively handle the item.
+    /// </summary>
+    private void RemoveAnyRemoteControl(GameObject gameObject)
+    {
+        UnityEngine.Object.Destroy(gameObject.GetComponent<RemotelyControlled>());
+    }
+
+    private bool TryGetCurrentWaterParkId(out NitroxId waterParkId)
+    {
+        if (Player.main && Player.main.currentWaterPark &&
+            Player.main.currentWaterPark.TryGetNitroxId(out waterParkId))
+        {
+            return true;
+        }
+        waterParkId = null;
+        return false;
+    }
+
+    public static List<InstalledModuleEntity> GetEquipmentModuleEntities(Equipment equipment, NitroxId equipmentId)
+    {
+        List<InstalledModuleEntity> entities = new();
+        foreach (KeyValuePair<string, InventoryItem> itemEntry in equipment.equipment)
+        {
+            InventoryItem item = itemEntry.Value;
+            if (item != null)
             {
-                WaterPark currentWaterPark = player.currentWaterPark;
+                Pickupable pickupable = item.item;
+                string classId = pickupable.RequireComponent<PrefabIdentifier>().ClassId;
+                NitroxId itemId = NitroxEntity.GetIdOrGenerateNew(pickupable.gameObject);
+                Optional<EntityMetadata> metadata = EntityMetadataExtractor.Extract(pickupable.gameObject);
+                List<Entity> children = GetPrefabChildren(pickupable.gameObject, itemId).ToList();
 
-                if (currentWaterPark != null)
-                {
-                    NitroxId waterParkId = NitroxEntity.GetId(currentWaterPark.gameObject);
-                    return Optional.Of(waterParkId);
-                }
+                entities.Add(new(itemEntry.Key, classId, itemId, pickupable.GetTechType().ToDto(), metadata.OrNull(), equipmentId, children));
             }
-
-            return Optional.Empty;
         }
+        return entities;
     }
 }

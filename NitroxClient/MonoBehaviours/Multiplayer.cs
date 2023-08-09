@@ -6,7 +6,7 @@ using NitroxClient.Communication.Abstract;
 using NitroxClient.Communication.MultiplayerSession;
 using NitroxClient.Communication.Packets.Processors.Abstract;
 using NitroxClient.GameLogic;
-using NitroxClient.GameLogic.Bases.New;
+using NitroxClient.GameLogic.Bases;
 using NitroxClient.GameLogic.ChatUI;
 using NitroxClient.GameLogic.PlayerLogic.PlayerModel.Abstract;
 using NitroxClient.GameLogic.PlayerLogic.PlayerModel.ColorSwap;
@@ -26,9 +26,12 @@ namespace NitroxClient.MonoBehaviours
     {
         public static Multiplayer Main;
         private readonly Dictionary<Type, PacketProcessor> packetProcessorCache = new();
+        private IClient client;
         private IMultiplayerSession multiplayerSession;
         private PacketReceiver packetReceiver;
         private ThrottledPacketSender throttledPacketSender;
+        private GameLogic.Terrain terrain;
+
         public bool InitialSyncCompleted { get; set; }
 
         /// <summary>
@@ -39,22 +42,32 @@ namespace NitroxClient.MonoBehaviours
         public void Awake()
         {
             NitroxServiceLocator.LifetimeScopeEnded += (_, _) => packetProcessorCache.Clear();
+            client = NitroxServiceLocator.LocateService<IClient>();
             multiplayerSession = NitroxServiceLocator.LocateService<IMultiplayerSession>();
             packetReceiver = NitroxServiceLocator.LocateService<PacketReceiver>();
             throttledPacketSender = NitroxServiceLocator.LocateService<ThrottledPacketSender>();
+            terrain = NitroxServiceLocator.LocateService<GameLogic.Terrain>();
 
             Main = this;
             DontDestroyOnLoad(gameObject);
 
+            Log.Info("Multiplayer client loaded…");
             Log.InGame(Language.main.Get("Nitrox_MultiplayerLoaded"));
         }
 
         public void Update()
         {
+            client.PollEvents();
+
             if (multiplayerSession.CurrentState.CurrentStage != MultiplayerSessionConnectionStage.DISCONNECTED)
             {
                 ProcessPackets();
                 throttledPacketSender.Update();
+
+                if (multiplayerSession.CurrentState.CurrentStage == MultiplayerSessionConnectionStage.SESSION_JOINED)
+                {
+                    terrain.UpdateVisibility();
+                }
             }
         }
 
@@ -152,9 +165,7 @@ namespace NitroxClient.MonoBehaviours
             gameObject.AddComponent<PlayerDeathBroadcaster>();
             gameObject.AddComponent<PlayerStatsBroadcaster>();
             gameObject.AddComponent<EntityPositionBroadcaster>();
-            gameObject.AddComponent<ThrottledBuilder>();
-            // TODO: Move to this object
-            Player.mainObject.AddComponent<BuildingTester>();
+            gameObject.AddComponent<BuildingHandler>();
         }
 
         public void StopCurrentSession()

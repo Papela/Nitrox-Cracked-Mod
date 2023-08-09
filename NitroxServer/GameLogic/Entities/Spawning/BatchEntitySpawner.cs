@@ -69,6 +69,14 @@ public class BatchEntitySpawner : IEntitySpawner
         batchCellsParser = new BatchCellsParser(entitySpawnPointFactory, serializer);
     }
 
+    public bool IsBatchSpawned(NitroxInt3 batchId)
+    {
+        lock (parsedBatches)
+        {
+            return parsedBatches.Contains(batchId);
+        }
+    }
+
     public List<Entity> LoadUnspawnedEntities(NitroxInt3 batchId, bool fullCacheCreation = false)
     {
         lock (parsedBatches)
@@ -225,9 +233,7 @@ public class BatchEntitySpawner : IEntitySpawner
                                                cellLevel,
                                                classId,
                                                true,
-                                               deterministicBatchGenerator.NextId(),
-                                               false,
-                                               null);
+                                               deterministicBatchGenerator.NextId());
         }
         else
         {
@@ -239,9 +245,7 @@ public class BatchEntitySpawner : IEntitySpawner
                                             classId,
                                             true,
                                             deterministicBatchGenerator.NextId(),
-                                            parentEntity,
-                                            false,
-                                            null);
+                                            parentEntity);
         }
 
         if (!TryCreatePrefabPlaceholdersGroupWithChildren(ref spawnedEntity, classId, deterministicBatchGenerator))
