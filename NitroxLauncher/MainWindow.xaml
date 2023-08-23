@@ -128,7 +128,7 @@
                         </StackPanel>
                     </Button>
                     <TextBlock FontSize="10" Foreground="#FF00FFFF" Text="Mod by Papela" FontWeight="Bold"/>
-                    <TextBlock FontSize="10" Foreground="#FF00FF00" Text="Discord: papela" FontWeight="Bold"/>
+                    <TextBlock FontSize="10" Foreground="#FF00FF00" Text="Discord: Papela#8062" FontWeight="Bold"/>
                 </StackPanel>
             </Grid>
             

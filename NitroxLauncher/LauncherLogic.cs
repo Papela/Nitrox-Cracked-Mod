@@ -113,7 +113,6 @@ namespace NitroxLauncher
             lastFindSubnauticaTask = Task.Factory.StartNew(() =>
             {
 
-
                 if (!FileSystem.Instance.IsWritable(Directory.GetCurrentDirectory()) || !FileSystem.Instance.IsWritable(path))
                 {
                     // TODO: Move this check to another place where Nitrox installation can be verified. (i.e: another page on the launcher in order to check permissions, network setup, ...)

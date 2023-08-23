@@ -103,7 +103,7 @@ public class DiscordClient : MonoBehaviour
     public static void InitializeRPMenu()
     {
         activity.State = Language.main.Get("Nitrox_DiscordMainMenuState");
-        activity.Details = "Mod by Papela#8062";
+        activity.Details = "Mod by Papela";
         activity.Assets.LargeImage = "icon";
         activity.Timestamps.Start = 0;
         UpdateActivity();
