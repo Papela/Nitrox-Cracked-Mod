@@ -1,11 +1,13 @@
-using NitroxModel.DataStructures;
+using System;
 using System.Collections.Generic;
+using NitroxModel.DataStructures;
 
 namespace NitroxModel.Packets;
 
+[Serializable]
 public class BuildingDesyncWarning : Packet
 {
-    public Dictionary<NitroxId, int> Operations { get; set; }
+    public Dictionary<NitroxId, int> Operations { get; }
 
     public BuildingDesyncWarning(Dictionary<NitroxId, int> operations)
     {

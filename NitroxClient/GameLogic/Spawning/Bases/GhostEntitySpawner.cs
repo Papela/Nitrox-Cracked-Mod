@@ -4,8 +4,8 @@ using NitroxClient.GameLogic.Bases;
 using NitroxClient.GameLogic.Spawning.WorldEntities;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
-using NitroxModel.DataStructures.GameLogic.Bases.Metadata;
 using NitroxModel.DataStructures.GameLogic.Entities.Bases;
+using NitroxModel.DataStructures.GameLogic.Entities.Metadata.Bases;
 using NitroxModel.DataStructures.Util;
 using NitroxModel_Subnautica.DataStructures;
 using UnityEngine;
@@ -52,7 +52,7 @@ public class GhostEntitySpawner : EntitySpawner<GhostEntity>
 
         if (constructableBase.TryGetComponentInChildren(out BaseGhost baseGhost, true))
         {
-            ghost.Metadata = GhostMetadataApplier.GetMetadataForGhost(baseGhost);
+            ghost.Metadata = GhostMetadataRetriever.GetMetadataForGhost(baseGhost);
         }
 
         return ghost;
@@ -148,8 +148,8 @@ public class GhostEntitySpawner : EntitySpawner<GhostEntity>
 
     public static void MoveGhostToTransform(GhostEntity ghostEntity, Transform transform)
     {
-        transform.localPosition = ghostEntity.LocalPosition.ToUnity();
-        transform.localRotation = ghostEntity.LocalRotation.ToUnity();
-        transform.localScale = ghostEntity.LocalScale.ToUnity();
+        transform.localPosition = ghostEntity.Transform.LocalPosition.ToUnity();
+        transform.localRotation = ghostEntity.Transform.LocalRotation.ToUnity();
+        transform.localScale = ghostEntity.Transform.LocalScale.ToUnity();
     }
 }

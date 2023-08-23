@@ -5,7 +5,6 @@ using System.Linq;
 using NitroxClient.Communication;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.Spawning.Bases;
-using NitroxClient.GameLogic.Spawning.Bases.PostSpawners;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures;
@@ -24,7 +23,7 @@ public class BuildingHandler : MonoBehaviour
 
     public Queue<Packet> BuildQueue;
     private bool working;
-    
+
     public Dictionary<NitroxId, DateTimeOffset> BasesCooldown;
     public DateTimeOffset LatestResyncRequestTimeOffset;
 
@@ -63,10 +62,7 @@ public class BuildingHandler : MonoBehaviour
     private IEnumerator SafelyTreatNextBuildCommand()
     {
         Packet packet = BuildQueue.Dequeue();
-        yield return CoroutineHelper.SafelyYieldEnumerator(TreatBuildCommand(packet), (exception) =>
-        {
-            Log.Error($"An error happened when treating build command {packet}:\n{exception}");
-        });
+        yield return TreatBuildCommand(packet).OnYieldError(exception => Log.Error($"An error happened when treating build command {packet}:\n{exception}"));
         working = false;
     }
 
@@ -146,7 +142,7 @@ public class BuildingHandler : MonoBehaviour
             else if (modifyConstructedAmount.ConstructedAmount == 1f)
             {
                 constructable.SetState(true, true);
-                yield return EntityPostSpawner.ApplyPostSpawner(gameObject, modifyConstructedAmount.GhostId);
+                yield return BuildingPostSpawner.ApplyPostSpawner(gameObject, modifyConstructedAmount.GhostId);
                 yield break;
             }
             constructable.SetState(false, false);
@@ -192,7 +188,7 @@ public class BuildingHandler : MonoBehaviour
             // In the case the built piece was an interior piece, we'll want to transfer the id to it.
             if (BuildUtils.TryTransferIdFromGhostToModule(baseGhost, updateBase.FormerGhostId, constructableBase, out GameObject moduleObject))
             {
-                yield return EntityPostSpawner.ApplyPostSpawner(moduleObject, updateBase.FormerGhostId);
+                yield return BuildingPostSpawner.ApplyPostSpawner(moduleObject, updateBase.FormerGhostId);
             }
             yield break;
         }
@@ -276,14 +272,13 @@ public class BuildingHandler : MonoBehaviour
         if (deltaTime.TotalMilliseconds < RESYNC_REQUEST_COOLDOWN)
         {
             double timeLeft = RESYNC_REQUEST_COOLDOWN * 0.001 - deltaTime.TotalSeconds;
-            ErrorMessage.AddMessage($"On cooldown for resync request for {timeLeft} more seconds");
+            Log.InGame(Language.main.Get("Nitrox_ResyncOnCooldown").Replace("{TIME_LEFT}", timeLeft.ToString()));
             return;
         }
         LatestResyncRequestTimeOffset = DateTimeOffset.Now;
 
-        Resolve<IPacketSender>().Send(new BuildingResyncRequest());
-        ErrorMessage.AddMessage("Issued a resync request for bases");
-        // TODO: Localize
+        this.Resolve<IPacketSender>().Send(new BuildingResyncRequest());
+        Log.InGame(Language.main.Get("Nitrox_ResyncRequested"));
     }
 
     public void StartResync(Dictionary<Entity, int> entities)
@@ -292,6 +287,11 @@ public class BuildingHandler : MonoBehaviour
         FailedOperations = 0;
         BuildQueue.Clear();
         InitializeOperations(entities.ToDictionary(pair => pair.Key.Id, pair => pair.Value));
+    }
+
+    public void StopResync()
+    {
+        Resyncing = false;
     }
 
     public void InitializeOperations(Dictionary<NitroxId, int> operations)
@@ -303,7 +303,7 @@ public class BuildingHandler : MonoBehaviour
         }
     }
 
-    
+
     public static Transform GetParentOrGlobalRoot(NitroxId id)
     {
         if (id != null && NitroxEntity.TryGetObjectFrom(id, out GameObject parentObject))

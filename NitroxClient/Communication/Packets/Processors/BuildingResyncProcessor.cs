@@ -1,3 +1,8 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using NitroxClient.Communication.Packets.Processors.Abstract;
 using NitroxClient.GameLogic;
 using NitroxClient.GameLogic.Bases;
@@ -6,14 +11,10 @@ using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.GameLogic;
+using NitroxModel.DataStructures.GameLogic.Entities;
 using NitroxModel.DataStructures.GameLogic.Entities.Bases;
-using NitroxModel.DataStructures.Unity;
 using NitroxModel.Packets;
 using NitroxModel_Subnautica.DataStructures;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace NitroxClient.Communication.Packets.Processors;
@@ -28,55 +29,62 @@ public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
     }
 
     public override void Process(BuildingResync packet)
-    {        
+    {
         if (!BuildingHandler.Main)
         {
             return;
         }
-        ErrorMessage.AddMessage($"Received a resync packet for bases with {packet.Entities.Count} entities");
-        BuildingHandler.Main.StartCoroutine(ResyncEntities(packet.Entities));
+
+        BuildingHandler.Main.StartCoroutine(ResyncBuildingEntities(packet.Entities));
     }
 
-    public IEnumerator ResyncEntities(Dictionary<Entity, int> entities)
+    public IEnumerator ResyncBuildingEntities(Dictionary<Entity, int> entities)
     {
-        DateTimeOffset resyncStart = DateTimeOffset.Now;
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         BuildingHandler.Main.StartResync(entities);
-        yield return CoroutineHelper.SafelyYieldEnumerator(UpdateEntities<Base, BuildEntity>(
-            entities.Keys.OfType<BuildEntity>().ToList(), OverwriteBase, (entity, reference) =>
-            {
-                return NitroxVector3.Distance(entity.LocalPosition, reference) < 0.001f;
-            }
-        ), exception => Log.Error($"Encountered an exception while resyncing BuildEntities:\n{exception}"));
-        yield return CoroutineHelper.SafelyYieldEnumerator(UpdateEntities<Constructable, ModuleEntity>(
-            entities.Keys.OfType<ModuleEntity>().ToList(), OverwriteModule, (entity, reference) =>
-            {
-                return NitroxVector3.Distance(entity.LocalPosition, reference) < 0.001f;
-            }
-        ), exception => Log.Error($"Encountered an exception while resyncing ModuleEntities:\n{exception}"));
-        BuildingHandler.Main.Resyncing = false;
+        yield return UpdateEntities<Base, BuildEntity>(entities.Keys.OfType<BuildEntity>().ToList(), OverwriteBase, IsInCloseProximity).OnYieldError(exception => Log.Error(exception, $"Encountered an exception while resyncing BuildEntities"));
+        yield return UpdateEntities<Constructable, ModuleEntity>(entities.Keys.OfType<ModuleEntity>().ToList(), OverwriteModule, IsInCloseProximity).OnYieldError(exception => Log.Error(exception, $"Encountered an exception while resyncing ModuleEntities"));
+        BuildingHandler.Main.StopResync();
 
-        DateTimeOffset resyncEnd = DateTimeOffset.Now;
-        ErrorMessage.AddMessage($"Finished resyncing {entities.Count} entities, took {(resyncEnd - resyncStart).TotalSeconds}s");
+        stopwatch.Stop();
+
+        Log.InGame(Language.main.Get("Nitrox_FinishedResyncRequest").Replace("{TIME}", stopwatch.ElapsedMilliseconds.ToString()).Replace("{COUNT}", entities.Count.ToString()));
     }
 
-    public IEnumerator UpdateEntities<C,E>(List<E> entitiesToUpdate, Func<C, E, IEnumerator> overwrite, Func<E, NitroxVector3, bool> correspondingPredicate) where C : Component where E : Entity
+    private bool IsInCloseProximity<C>(WorldEntity entity, C componentInWorld) where C : Component
+    {
+        return Vector3.Distance(entity.Transform.Position.ToUnity(), componentInWorld.transform.position) < 0.001f;
+    }
+
+    /// <summary>
+    ///     Tries to overwrite components of the provided type found in GlobalRoot's hierarchy by the provided list of entities to update.
+    ///     If no component is found to be corresponding to a provided entity, the entity will be spawned independently.
+    ///     Other components of the provided type which weren't updated shall be destroyed.
+    /// </summary>
+    /// <remarks>
+    ///     The provided list is modified by the function. Make sure it's not used somewhere else.
+    /// </remarks>
+    /// <typeparam name="C">The Unity component to be looked for</typeparam>
+    /// <typeparam name="E">The GlobalRootEntity type which will be updated</typeparam>
+    /// <param name="overwrite">A function to overwrite a given component by a given entity</param>
+    /// <param name="correspondingPredicate">
+    /// Predicate to determine if an entity can overwrite the GameObject of the provided component.
+    /// </param>
+    public IEnumerator UpdateEntities<C,E>(List<E> entitiesToUpdate, Func<C, E, IEnumerator> overwrite, Func<E, C, bool> correspondingPredicate) where C : Component where E : GlobalRootEntity
     {
         List<C> unmarkedComponents = new();
+        Dictionary<NitroxId, E> entitiesToUpdateById = entitiesToUpdate.ToDictionary(e => e.Id);
 
         foreach (Transform childTransform in LargeWorldStreamer.main.globalRoot.transform)
         {
             if (childTransform.TryGetComponent(out C component))
             {
-                if (component.TryGetNitroxId(out NitroxId id))
+                if (component.TryGetNitroxId(out NitroxId id) && entitiesToUpdateById.TryGetValue(id, out E correspondingEntity))
                 {
-                    E correspondingEntity = entitiesToUpdate.Find(entity => entity.Id.Equals(id));
-                    if (correspondingEntity != null)
-                    {
-                        yield return CoroutineHelper.SafelyYieldEnumerator(overwrite(component, correspondingEntity), Log.Error);
-                        entitiesToUpdate.Remove(correspondingEntity);
-                        continue;
-                    }
+                    yield return overwrite(component, correspondingEntity).OnYieldError(Log.Error);
+                    entitiesToUpdate.Remove(correspondingEntity);
+                    continue;
                 }
                 unmarkedComponents.Add(component);
             }
@@ -86,8 +94,8 @@ public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
         {
             E entity = entitiesToUpdate[i];
             C associatedComponent = unmarkedComponents.Find(c =>
-                correspondingPredicate(entity, c.transform.localPosition.ToDto()));
-            yield return CoroutineHelper.SafelyYieldEnumerator(overwrite(associatedComponent, entity), Log.Error);
+                correspondingPredicate(entity, c));
+            yield return overwrite(associatedComponent, entity).OnYieldError(Log.Error);
 
             unmarkedComponents.Remove(associatedComponent);
             entitiesToUpdate.RemoveAt(i);
@@ -95,13 +103,13 @@ public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
 
         for (int i = unmarkedComponents.Count - 1; i >= 0; i--)
         {
-            Log.Debug($"[{typeof(E)} RESYNC] Destroyed component {unmarkedComponents[i].gameObject}");
+            Log.Debug($"[{typeof(E)} RESYNC] Destroyed GameObject {unmarkedComponents[i].gameObject}");
             GameObject.Destroy(unmarkedComponents[i].gameObject);
         }
         foreach (E entity in entitiesToUpdate)
         {
             Log.Debug($"[{typeof(E)} RESYNC] spawning entity {entity.Id}");
-            yield return CoroutineHelper.SafelyYieldEnumerator(entities.SpawnAsync(entity), Log.Error);
+            yield return entities.SpawnAsync(entity).OnYieldError(Log.Error);
         }
     }
 
@@ -109,7 +117,7 @@ public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
     {
         Log.Debug($"[Base RESYNC] Overwriting base with id {buildEntity.Id}");
         ClearBaseChildren(@base);
-        yield return BuildEntitySpawner.SetupBase(buildEntity, @base);
+        yield return BuildEntitySpawner.SetupBase(buildEntity, @base, entities);
         yield return MoonpoolManager.RestoreMoonpools(buildEntity.ChildEntities.OfType<MoonpoolEntity>(), @base);
         foreach (MapRoomEntity mapRoomEntity in buildEntity.ChildEntities.OfType<MapRoomEntity>())
         {
