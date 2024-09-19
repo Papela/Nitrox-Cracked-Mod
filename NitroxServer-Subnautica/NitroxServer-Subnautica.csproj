@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <RootNamespace>NitroxServer_Subnautica</RootNamespace>
+        <Nullable>disable</Nullable>
+        <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NitroxModel-Subnautica\NitroxModel-Subnautica.csproj" />
+        <ProjectReference Include="..\NitroxServer\NitroxServer.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AssetsTools.NET" Version="3.0.0-preview1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="protobuf-net, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\Nitrox.Assets.Subnautica\protobuf-net.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+  <Target Name="MoveNitroxAssetsToServerOutput" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <ItemGroup>
+      <NitroxSubnauticaTypeTreeData Include="..\Nitrox.Assets.Subnautica\**\*.tpk" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NitroxSubnauticaTypeTreeData)" DestinationFolder="$(TargetDir)\%(RecursiveDir)" />
+  </Target>
+</Project>

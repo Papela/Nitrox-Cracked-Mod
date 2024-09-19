@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <Nullable>disable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="HarmonyX" Version="2.10.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NitroxClient\NitroxClient.csproj" />
+      <ProjectReference Include="..\NitroxModel-Subnautica\NitroxModel-Subnautica.csproj" />
+    </ItemGroup>
+
+    <Target Name="IncludeGameReferences" AfterTargets="FindGameAndIncludeReferences">
+        <ItemGroup>
+            <Reference Include="FMODUnity">
+                <HintPath>$(GameManagedDir)\FMODUnity.dll</HintPath>
+            </Reference>
+            <Reference Include="Sentry">
+                <HintPath>$(GameManagedDir)\Sentry.dll</HintPath>
+            </Reference>
+        </ItemGroup>
+    </Target>
+</Project>
