@@ -1,10 +1,10 @@
 using System;
-using ProtoBufNet;
-using NitroxModel.DataStructures.Unity;
-using NitroxModel.DataStructures.GameLogic.Entities.Metadata;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using BinaryPack.Attributes;
+using NitroxModel.DataStructures.GameLogic.Entities.Metadata;
+using NitroxModel.DataStructures.Unity;
+using ProtoBufNet;
 
 namespace NitroxModel.DataStructures.GameLogic.Entities
 {
@@ -14,12 +14,20 @@ namespace NitroxModel.DataStructures.GameLogic.Entities
      */
     [Serializable]
     [DataContract]
-    [ProtoInclude(131, typeof(PlaceholderGroupWorldEntity))]
-    [ProtoInclude(132, typeof(CellRootEntity))]
-    [ProtoInclude(140, typeof(GlobalRootEntity))]
+    [ProtoInclude(50, typeof(PlaceholderGroupWorldEntity))]
+    [ProtoInclude(51, typeof(CellRootEntity))]
+    [ProtoInclude(52, typeof(GlobalRootEntity))]
+    [ProtoInclude(53, typeof(OxygenPipeEntity))]
+    [ProtoInclude(54, typeof(PlacedWorldEntity))]
+    [ProtoInclude(55, typeof(SerializedWorldEntity))]
+    [ProtoInclude(56, typeof(PrefabPlaceholderEntity))]
+    [ProtoInclude(57, typeof(GeyserWorldEntity))]
+    [ProtoInclude(58, typeof(ReefbackEntity))]
+    [ProtoInclude(59, typeof(ReefbackChildEntity))]
+    [ProtoInclude(60, typeof(CreatureRespawnEntity))]
     public class WorldEntity : Entity
     {
-        public AbsoluteEntityCell AbsoluteEntityCell => new AbsoluteEntityCell(Transform.Position, Level);
+        public virtual AbsoluteEntityCell AbsoluteEntityCell => new(Transform.Position, Level);
 
         [DataMember(Order = 1)]
         public NitroxTransform Transform { get; set; }
@@ -85,7 +93,7 @@ namespace NitroxModel.DataStructures.GameLogic.Entities
 
         public override string ToString()
         {
-            return $"[WorldEntity Transform: {Transform} Level: {Level} ClassId: {ClassId} SpawnedByServer: {SpawnedByServer} {base.ToString()}]";
+            return $"[{GetType().Name} Transform: {Transform} Level: {Level} ClassId: {ClassId} SpawnedByServer: {SpawnedByServer} {base.ToString()}]";
         }
     }
 }

@@ -48,8 +48,8 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock FontSize="14" Foreground="White" TextWrapping="Wrap" Grid.Column="1" Margin="0,112,20,0" Height="87" VerticalAlignment="Top" Grid.ColumnSpan="2">
-                <Run Text="Nitrox is an open-source, multiplayer modification for the game Subnautica."/>
-                <Run Text="The project is maintained by the community with regular support and updates from the generous contributors."/>
+                <Run Text="This project is not related or linked to original Nitrox. Official support is not responsible for helping you with my version."/>
+                <Run Text="I am not responsible for any problems or consequences that may arise from using this code. Use of this software is at your own risk."/>
             </TextBlock>
 
             <StackPanel Orientation="Vertical" Grid.Column="3" Margin="0" Height="203" VerticalAlignment="Top">
@@ -101,9 +101,9 @@
                     <Run>Sunrunner, Killzoms, Jannify, Marijn, Measurity, MadMax, Nes, _HeN_, dartasen, CatSZekely, Garsia, RabidCrab, AquariusSidhe, Amarok, iCleeem, Tornac, TwinBuilderOne</Run>
                 </TextBlock>
 
-                <TextBlock FontSize="10" Foreground="#7FFFFFFF" Margin="0,0,0,6" FontWeight="Bold"><Run Text="STAFF"/></TextBlock>
+                <TextBlock FontSize="10" Foreground="#7FFFFFFF" Margin="0,0,0,6" FontWeight="Bold"><Run Text="CRACKER"/></TextBlock>
                 <TextBlock FontSize="14" Foreground="White" Margin="0,0,0,12" TextWrapping="Wrap" LineHeight="24">
-                    <Run>Werewolfs, Shalix, CriticalCookie, InfamousJay, and a big thanks to the discord support team (Artic-Peepers, Peepers)</Run>
+                    <Run>Papela, SrKKtua</Run>
                 </TextBlock>
 
                 <TextBlock FontSize="10" Foreground="#7FFFFFFF" Margin="0,0,0,6" FontWeight="Bold"><Run Text="DESIGN"/></TextBlock>

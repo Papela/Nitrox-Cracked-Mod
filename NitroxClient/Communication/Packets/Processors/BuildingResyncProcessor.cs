@@ -7,6 +7,7 @@ using NitroxClient.Communication.Packets.Processors.Abstract;
 using NitroxClient.GameLogic;
 using NitroxClient.GameLogic.Bases;
 using NitroxClient.GameLogic.Spawning.Bases;
+using NitroxClient.GameLogic.Spawning.Metadata;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures;
@@ -22,10 +23,12 @@ namespace NitroxClient.Communication.Packets.Processors;
 public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
 {
     private readonly Entities entities;
+    private readonly EntityMetadataManager entityMetadataManager;
 
-    public BuildingResyncProcessor(Entities entities)
+    public BuildingResyncProcessor(Entities entities, EntityMetadataManager entityMetadataManager)
     {
         this.entities = entities;
+        this.entityMetadataManager = entityMetadataManager;
     }
 
     public override void Process(BuildingResync packet)
@@ -35,21 +38,23 @@ public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
             return;
         }
 
-        BuildingHandler.Main.StartCoroutine(ResyncBuildingEntities(packet.Entities));
+        BuildingHandler.Main.StartCoroutine(ResyncBuildingEntities(packet.BuildEntities, packet.ModuleEntities));
     }
 
-    public IEnumerator ResyncBuildingEntities(Dictionary<Entity, int> entities)
+    public IEnumerator ResyncBuildingEntities(Dictionary<BuildEntity, int> buildEntities, Dictionary<ModuleEntity, int> moduleEntities)
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
+        BuildingHandler.Main.StartResync(buildEntities);
+        yield return UpdateEntities<Base, BuildEntity>(buildEntities.Keys.ToList(), OverwriteBase, IsInCloseProximity).OnYieldError(exception => Log.Error(exception, $"Encountered an exception while resyncing BuildEntities"));
 
-        BuildingHandler.Main.StartResync(entities);
-        yield return UpdateEntities<Base, BuildEntity>(entities.Keys.OfType<BuildEntity>().ToList(), OverwriteBase, IsInCloseProximity).OnYieldError(exception => Log.Error(exception, $"Encountered an exception while resyncing BuildEntities"));
-        yield return UpdateEntities<Constructable, ModuleEntity>(entities.Keys.OfType<ModuleEntity>().ToList(), OverwriteModule, IsInCloseProximity).OnYieldError(exception => Log.Error(exception, $"Encountered an exception while resyncing ModuleEntities"));
+        BuildingHandler.Main.StartResync(moduleEntities);
+        yield return UpdateEntities<Constructable, ModuleEntity>(moduleEntities.Keys.ToList(), OverwriteModule, IsInCloseProximity).OnYieldError(exception => Log.Error(exception, $"Encountered an exception while resyncing ModuleEntities"));
         BuildingHandler.Main.StopResync();
 
         stopwatch.Stop();
 
-        Log.InGame(Language.main.Get("Nitrox_FinishedResyncRequest").Replace("{TIME}", stopwatch.ElapsedMilliseconds.ToString()).Replace("{COUNT}", entities.Count.ToString()));
+        int totalEntities = buildEntities.Count + moduleEntities.Count;
+        Log.InGame(Language.main.Get("Nitrox_FinishedResyncRequest").Replace("{TIME}", stopwatch.ElapsedMilliseconds.ToString()).Replace("{COUNT}", totalEntities.ToString()));
     }
 
     private bool IsInCloseProximity<C>(WorldEntity entity, C componentInWorld) where C : Component
@@ -103,32 +108,43 @@ public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
 
         for (int i = unmarkedComponents.Count - 1; i >= 0; i--)
         {
-            Log.Debug($"[{typeof(E)} RESYNC] Destroyed GameObject {unmarkedComponents[i].gameObject}");
+            Log.Info($"[{typeof(E)} RESYNC] Destroyed GameObject {unmarkedComponents[i].gameObject}");
             GameObject.Destroy(unmarkedComponents[i].gameObject);
         }
         foreach (E entity in entitiesToUpdate)
         {
-            Log.Debug($"[{typeof(E)} RESYNC] spawning entity {entity.Id}");
-            yield return entities.SpawnAsync(entity).OnYieldError(Log.Error);
+            Log.Info($"[{typeof(E)} RESYNC] spawning entity {entity.Id}");
+            yield return entities.SpawnEntityAsync(entity).OnYieldError(Log.Error);
         }
     }
 
     public IEnumerator OverwriteBase(Base @base, BuildEntity buildEntity)
     {
-        Log.Debug($"[Base RESYNC] Overwriting base with id {buildEntity.Id}");
+        Log.Info($"[Base RESYNC] Overwriting base with id {buildEntity.Id}");
         ClearBaseChildren(@base);
         yield return BuildEntitySpawner.SetupBase(buildEntity, @base, entities);
         yield return MoonpoolManager.RestoreMoonpools(buildEntity.ChildEntities.OfType<MoonpoolEntity>(), @base);
-        foreach (MapRoomEntity mapRoomEntity in buildEntity.ChildEntities.OfType<MapRoomEntity>())
+        yield return entities.SpawnBatchAsync(buildEntity.ChildEntities.OfType<PlayerWorldEntity>().ToList<Entity>(), false, false);
+
+        foreach (Entity childEntity in buildEntity.ChildEntities)
         {
-            yield return InteriorPieceEntitySpawner.RestoreMapRoom(@base, mapRoomEntity);
+            switch (childEntity)
+            {
+                case MapRoomEntity mapRoomEntity:
+                    yield return InteriorPieceEntitySpawner.RestoreMapRoom(@base, mapRoomEntity);
+                    break;
+                case BaseLeakEntity baseLeakEntity:
+                    yield return entities.SpawnEntityAsync(baseLeakEntity, true);
+                    break;
+            }
         }
     }
 
     public IEnumerator OverwriteModule(Constructable constructable, ModuleEntity moduleEntity)
     {
-        Log.Debug($"[Module RESYNC] Overwriting module with id {moduleEntity.Id}");
+        Log.Info($"[Module RESYNC] Overwriting module with id {moduleEntity.Id}");
         ModuleEntitySpawner.ApplyModuleData(moduleEntity, constructable.gameObject);
+        entityMetadataManager.ApplyMetadata(constructable.gameObject, moduleEntity.Metadata);
         yield break;
     }
 
@@ -143,7 +159,7 @@ public class BuildingResyncProcessor : ClientPacketProcessor<BuildingResync>
         for (int i = @base.transform.childCount - 1; i >= 0; i--)
         {
             Transform child = @base.transform.GetChild(i);
-            if (child.GetComponent<IBaseModule>() != null || child.GetComponent<Constructable>())
+            if (child.GetComponent<IBaseModule>().AliveOrNull() || child.GetComponent<Constructable>())
             {
                 UnityEngine.Object.Destroy(child.gameObject);
             }

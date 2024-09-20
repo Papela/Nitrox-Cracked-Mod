@@ -1,12 +1,11 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using NitroxClient.GameLogic.Bases;
 using NitroxClient.GameLogic.Helper;
-using NitroxClient.GameLogic.Spawning.Metadata;
+using NitroxClient.GameLogic.Spawning.Abstract;
 using NitroxClient.GameLogic.Spawning.WorldEntities;
 using NitroxClient.MonoBehaviours;
+using NitroxClient.MonoBehaviours.Cyclops;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.GameLogic;
@@ -27,10 +26,8 @@ public class ModuleEntitySpawner : EntitySpawner<ModuleEntity>
         this.entities = entities;
     }
 
-    public override IEnumerator SpawnAsync(ModuleEntity entity, TaskResult<Optional<GameObject>> result)
+    protected override IEnumerator SpawnAsync(ModuleEntity entity, TaskResult<Optional<GameObject>> result)
     {
-        Log.Debug($"Spawning a ModuleEntity: {entity.Id}");
-
         if (NitroxEntity.TryGetObjectFrom(entity.Id, out GameObject gameObject) && gameObject)
         {
             Log.Error("Trying to respawn an already spawned module without a proper resync process.");
@@ -52,13 +49,7 @@ public class ModuleEntitySpawner : EntitySpawner<ModuleEntity>
             yield break;
         }
 
-        DateTimeOffset beginTime = DateTimeOffset.Now;
-        List<Entity> rootEntitiesToSpawn = entity.ChildEntities.OfType<InventoryItemEntity>().ToList<Entity>();
-
-        yield return entities.SpawnBatchAsync(rootEntitiesToSpawn, true);
-
-        DateTimeOffset endTime = DateTimeOffset.Now;
-        Log.Debug($"Module complete spawning took {(endTime - beginTime).TotalMilliseconds}ms");
+        yield return entities.SpawnBatchAsync(entity.ChildEntities.OfType<InventoryItemEntity>().ToList<Entity>(), true);
 
         if (moduleObject.TryGetComponent(out PowerSource powerSource))
         {
@@ -67,19 +58,17 @@ public class ModuleEntitySpawner : EntitySpawner<ModuleEntity>
         }
     }
 
-    public override bool SpawnsOwnChildren(ModuleEntity entity) => true;
+    protected override bool SpawnsOwnChildren(ModuleEntity entity) => true;
 
     public static IEnumerator RestoreModule(Transform parent, ModuleEntity moduleEntity, TaskResult<Optional<GameObject>> result = null)
     {
-        Log.Debug($"Restoring module {moduleEntity.ClassId}");
-
         if (!DefaultWorldEntitySpawner.TryGetCachedPrefab(out GameObject prefab, classId: moduleEntity.ClassId))
         {
             TaskResult<GameObject> prefabResult = new();
             yield return DefaultWorldEntitySpawner.RequestPrefab(moduleEntity.ClassId, prefabResult);
             if (!prefabResult.Get())
             {
-                Log.Debug($"Couldn't find a prefab for module of ClassId {moduleEntity.ClassId}");
+                Log.Error($"Couldn't find a prefab for module of ClassId {moduleEntity.ClassId}");
                 yield break;
             }
             prefab = prefabResult.Get();
@@ -92,6 +81,12 @@ public class ModuleEntitySpawner : EntitySpawner<ModuleEntity>
         moduleTransform.localRotation = moduleEntity.Transform.LocalRotation.ToUnity();
         moduleTransform.localScale = moduleEntity.Transform.LocalScale.ToUnity();
         ApplyModuleData(moduleEntity, moduleObject, result);
+
+        if (parent && parent.TryGetComponent(out NitroxCyclops nitroxCyclops) && nitroxCyclops.Virtual)
+        {
+            nitroxCyclops.Virtual.ReplicateConstructable(moduleObject.GetComponent<Constructable>());
+        }
+
         yield return BuildingPostSpawner.ApplyPostSpawner(moduleObject, moduleEntity.Id);
     }
 
@@ -111,7 +106,7 @@ public class ModuleEntitySpawner : EntitySpawner<ModuleEntity>
         constructable.SetState(moduleEntity.ConstructedAmount >= 1f, false);
         constructable.UpdateMaterial();
         NitroxEntity.SetNewId(moduleObject, moduleEntity.Id);
-        EntityMetadataProcessor.ApplyMetadata(moduleObject, moduleEntity.Metadata);
+
         result?.Set(moduleObject);
     }
 
@@ -123,7 +118,7 @@ public class ModuleEntitySpawner : EntitySpawner<ModuleEntity>
         {
             moduleEntity.Id = entityId;
         }
-        if (constructable.TryGetComponentInParent(out Base parentBase) &&
+        if (constructable.TryGetComponentInParent(out Base parentBase, true) &&
             parentBase.TryGetNitroxId(out NitroxId parentId))
         {
             moduleEntity.ParentId = parentId;

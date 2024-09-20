@@ -11,6 +11,7 @@ using System.Windows.Interop;
 using NitroxLauncher.Models.Events;
 using NitroxLauncher.Models.Properties;
 using NitroxLauncher.Pages;
+using NitroxModel;
 using NitroxModel.Discovery;
 using NitroxModel.Helper;
 using NitroxModel.Platforms.OS.Windows;
@@ -69,24 +70,37 @@ namespace NitroxLauncher
                     Environment.Exit(1);
                 }
 
+                LauncherNotifier.Warning("V.1.8.0.2 (2024)");
+                LauncherNotifier.Success("You are using a Mod version made by Papela.");
+
                 if (!NetworkInterface.GetIsNetworkAvailable())
                 {
                     Log.Warn("Launcher may not be connected to internet");
                     LauncherNotifier.Error("Launcher may not be connected to internet");
                 }
-                LauncherNotifier.Success("You are using a Mod version made by Papela.");
-                LauncherNotifier.Warning("Discord: papela");
 
                 if (!NitroxEnvironment.IsReleaseMode)
                 {
                     LauncherNotifier.Warning("You're now using Nitrox DEV build");
                 }
+
+# if DEBUG
+                string[] launchArgs = Environment.GetCommandLineArgs();
+                for (int i = 0; i < launchArgs.Length; i++)
+                {
+                    if (launchArgs[i].Equals("-instantlaunch", StringComparison.OrdinalIgnoreCase) && launchArgs.Length > i + 1)
+                    {
+                        LauncherLogic.Instance.StartMultiplayerAsync().ContinueWithHandleError();
+                        LauncherLogic.Server.StartServer(true, launchArgs[i + 1]);
+                    }
+                }
+#endif
             };
 
             logic.SetTargetedSubnauticaPath(NitroxUser.GamePath)
                  .ContinueWith(task =>
                  {
-                     if (GameInstallationFinder.IsSubnauticaDirectory(task.Result))
+                     if (GameInstallationHelper.HasGameExecutable(task.Result, GameInfo.Subnautica))
                      {
                          LauncherLogic.Instance.NavigateTo<LaunchGamePage>();
                      }

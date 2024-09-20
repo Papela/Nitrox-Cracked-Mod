@@ -1,6 +1,7 @@
 using System.Collections;
 using NitroxClient.Communication;
 using NitroxClient.GameLogic.Helper;
+using NitroxClient.GameLogic.Spawning.Abstract;
 using NitroxClient.GameLogic.Spawning.WorldEntities;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
@@ -12,9 +13,9 @@ using UnityEngine;
 
 namespace NitroxClient.GameLogic.Spawning;
 
-public class InventoryItemEntitySpawner : EntitySpawner<InventoryItemEntity>
+public class InventoryItemEntitySpawner : SyncEntitySpawner<InventoryItemEntity>
 {
-    public override IEnumerator SpawnAsync(InventoryItemEntity entity, TaskResult<Optional<GameObject>> result)
+    protected override IEnumerator SpawnAsync(InventoryItemEntity entity, TaskResult<Optional<GameObject>> result)
     {        
         if (!CanSpawn(entity, out GameObject parentObject, out ItemsContainer container, out string errorLog))
         {
@@ -24,7 +25,7 @@ public class InventoryItemEntitySpawner : EntitySpawner<InventoryItemEntity>
         }
 
         TaskResult<GameObject> gameObjectResult = new();
-        yield return DefaultWorldEntitySpawner.CreateGameObject(entity.TechType.ToUnity(), entity.ClassId, gameObjectResult);
+        yield return DefaultWorldEntitySpawner.CreateGameObject(entity.TechType.ToUnity(), entity.ClassId, entity.Id, gameObjectResult);
         GameObject gameObject = gameObjectResult.Get();
 
         SetupObject(entity, gameObject, parentObject, container);
@@ -32,7 +33,7 @@ public class InventoryItemEntitySpawner : EntitySpawner<InventoryItemEntity>
         result.Set(Optional.Of(gameObject));
     }
 
-    public override bool SpawnSync(InventoryItemEntity entity, TaskResult<Optional<GameObject>> result)
+    protected override bool SpawnSync(InventoryItemEntity entity, TaskResult<Optional<GameObject>> result)
     {
         if (!DefaultWorldEntitySpawner.TryGetCachedPrefab(out GameObject prefab, entity.TechType.ToUnity(), entity.ClassId))
         {
@@ -40,17 +41,19 @@ public class InventoryItemEntitySpawner : EntitySpawner<InventoryItemEntity>
         }
         if (!CanSpawn(entity, out GameObject parentObject, out ItemsContainer container, out string errorLog))
         {
-            Log.Info(errorLog);
-            return false;
+            Log.Error(errorLog);
+            return true;
         }
 
-        GameObject gameObject = Utils.SpawnFromPrefab(prefab, null);
+        GameObject gameObject = GameObjectHelper.SpawnFromPrefab(prefab, entity.Id);
 
         SetupObject(entity, gameObject, parentObject, container);
 
         result.Set(gameObject);
         return true;
     }
+
+    protected override bool SpawnsOwnChildren(InventoryItemEntity entity) => false;
 
     private bool CanSpawn(InventoryItemEntity entity, out GameObject parentObject, out ItemsContainer container, out string errorLog)
     {
@@ -69,7 +72,7 @@ public class InventoryItemEntitySpawner : EntitySpawner<InventoryItemEntity>
         {
             parentObject = null;
             container = null;
-            errorLog = $"Could not find container field on GameObject {parentObject.GetFullHierarchyPath()}";
+            errorLog = $"Could not find container field on GameObject {parentObject.AliveOrNull()?.GetFullHierarchyPath()}";
             return false;
         }
 
@@ -81,10 +84,12 @@ public class InventoryItemEntitySpawner : EntitySpawner<InventoryItemEntity>
 
     private void SetupObject(InventoryItemEntity entity, GameObject gameObject, GameObject parentObject, ItemsContainer container)
     {
-        NitroxEntity.SetNewId(gameObject, entity.Id);
-
         Pickupable pickupable = gameObject.RequireComponent<Pickupable>();
         pickupable.Initialize();
+
+        // Items eventually get "secured" once a player gets into a SubRoot (or for other reasons) so we need to force this state by default
+        // so that player don't risk their whole inventory if they reconnect in the water.
+        pickupable.destroyOnDeath = false;
 
         using (PacketSuppressor<EntityReparented>.Suppress())
         using (PacketSuppressor<PlayerQuickSlotsBindingChanged>.Suppress())
@@ -92,10 +97,5 @@ public class InventoryItemEntitySpawner : EntitySpawner<InventoryItemEntity>
             container.UnsafeAdd(new InventoryItem(pickupable));
             Log.Debug($"Received: Added item {pickupable.GetTechType()} ({entity.Id}) to container {parentObject.GetFullHierarchyPath()}");
         }
-    }
-
-    public override bool SpawnsOwnChildren(InventoryItemEntity entity)
-    {
-        return false;
     }
 }

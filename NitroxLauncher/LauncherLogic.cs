@@ -46,14 +46,14 @@ namespace NitroxLauncher
         {
             Application.Current.MainWindow?.Hide();
 
-            try
-            {
-                nitroxEntryPatch.Remove();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error while disposing the launcher");
-            }
+                try
+                {
+                    nitroxEntryPatch.Remove();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Error while disposing the launcher");
+                }
 
             gameProcess?.Dispose();
             Server?.Dispose();
@@ -126,10 +126,10 @@ namespace NitroxLauncher
                         }, DispatcherPriority.ApplicationIdle);
                     }
                 }
-                
+
                 // Save game path as preferred for future sessions.
                 NitroxUser.PreferredGamePath = path;
-                
+
                 if (nitroxEntryPatch?.IsApplied == true)
                 {
                     nitroxEntryPatch.Remove();
@@ -193,6 +193,7 @@ namespace NitroxLauncher
                 throw new Exception("Location of Subnautica is unknown. Set the path to it in settings.");
             }
 
+
 #if RELEASE
             if (Process.GetProcessesByName("Subnautica").Length > 0)
             {
@@ -239,10 +240,10 @@ namespace NitroxLauncher
         private async Task<ProcessEx> StartSubnauticaAsync()
         {
             string subnauticaPath = Config.SubnauticaPath;
-            string subnauticaLaunchArguments = Config.SubnauticaLaunchArguments;
+            string subnauticaLaunchArguments = $"{Config.SubnauticaLaunchArguments} {string.Join(" ", Environment.GetCommandLineArgs())}";
             string subnauticaExe = Path.Combine(subnauticaPath, GameInfo.Subnautica.ExeName);
             IGamePlatform platform = GamePlatforms.GetPlatformByGameDir(subnauticaPath);
-            
+
             // Start game & gaming platform if needed.
             using ProcessEx game = platform switch
             {
@@ -253,7 +254,7 @@ namespace NitroxLauncher
                 _ => throw new Exception($"Directory '{subnauticaPath}' is not a valid {GameInfo.Subnautica.Name} game installation or the game's platform is unsupported by Nitrox.")
             };
 
-            return game ?? throw new Exception($"Unable to start game through {platform.Name}");
+            return game ?? throw new Exception($"Game failed to start through {platform.Name}");
         }
 
         private void OnSubnauticaExited(object sender, EventArgs e)

@@ -1,9 +1,11 @@
-using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using NitroxClient.GameLogic.Bases;
 using NitroxClient.GameLogic.Helper;
+using NitroxClient.GameLogic.Spawning.Abstract;
+using NitroxClient.GameLogic.Spawning.Metadata;
 using NitroxClient.MonoBehaviours;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.GameLogic;
@@ -19,48 +21,65 @@ namespace NitroxClient.GameLogic.Spawning.Bases;
 public class BuildEntitySpawner : EntitySpawner<BuildEntity>
 {
     private readonly Entities entities;
+    private readonly BaseLeakEntitySpawner baseLeakEntitySpawner;
 
-    public BuildEntitySpawner(Entities entities)
+    public BuildEntitySpawner(Entities entities, BaseLeakEntitySpawner baseLeakEntitySpawner)
     {
         this.entities = entities;
+        this.baseLeakEntitySpawner = baseLeakEntitySpawner;
     }
 
-    public override IEnumerator SpawnAsync(BuildEntity entity, TaskResult<Optional<GameObject>> result)
+    protected override IEnumerator SpawnAsync(BuildEntity entity, TaskResult<Optional<GameObject>> result)
     {
-        Log.Debug($"Spawning a BuildEntity: {entity.Id}");
         if (NitroxEntity.TryGetObjectFrom(entity.Id, out GameObject gameObject) && gameObject)
         {
             Log.Error("Trying to respawn an already spawned Base without a proper resync process.");
             yield break;
         }
 
+#if DEBUG
         Stopwatch stopwatch = Stopwatch.StartNew();
+#endif
         GameObject newBase = UnityEngine.Object.Instantiate(BaseGhost._basePrefab, LargeWorldStreamer.main.globalRoot.transform, entity.Transform.LocalPosition.ToUnity(), entity.Transform.LocalRotation.ToUnity(), entity.Transform.LocalScale.ToUnity(), false);
         if (LargeWorld.main)
         {
             LargeWorld.main.streamer.cellManager.RegisterEntity(newBase);
         }
         Base @base = newBase.GetComponent<Base>();
-        if (!@base)
-        {
-            Log.Debug("No Base component found");
-            yield break;
-        }
         yield return SetupBase(entity, @base, entities, result);
-        Log.Debug($"Took {stopwatch.ElapsedMilliseconds}ms to create the Base");
-
-        yield return entities.SpawnAsync(entity.ChildEntities.OfType<PlayerWorldEntity>());
+#if DEBUG
+        Log.Verbose($"Took {stopwatch.ElapsedMilliseconds}ms to create the Base");
+#endif
+        yield return entities.SpawnBatchAsync(entity.ChildEntities.OfType<PlayerWorldEntity>().ToList<Entity>());
         yield return MoonpoolManager.RestoreMoonpools(entity.ChildEntities.OfType<MoonpoolEntity>(), @base);
-        foreach (MapRoomEntity mapRoomEntity in entity.ChildEntities.OfType<MapRoomEntity>())
+
+        TaskResult<Optional<GameObject>> childResult = new();
+        bool atLeastOneLeak = false;
+        foreach (Entity childEntity in entity.ChildEntities)
         {
-            yield return InteriorPieceEntitySpawner.RestoreMapRoom(@base, mapRoomEntity);
+            switch (childEntity)
+            {
+                case MapRoomEntity mapRoomEntity:
+                    yield return InteriorPieceEntitySpawner.RestoreMapRoom(@base, mapRoomEntity);
+                    break;
+                case BaseLeakEntity baseLeakEntity:
+                    atLeastOneLeak = true;
+                    yield return baseLeakEntitySpawner.SpawnAsync(baseLeakEntity, childResult);
+                    break;
+            }
         }
+        if (atLeastOneLeak)
+        {
+            BaseHullStrength baseHullStrength = @base.GetComponent<BaseHullStrength>();
+            ErrorMessage.AddMessage(Language.main.GetFormat("BaseHullStrDamageDetected", baseHullStrength.totalStrength));
+        }
+
         result.Set(@base.gameObject);
     }
 
-    public override bool SpawnsOwnChildren(BuildEntity entity) => true;
+    protected override bool SpawnsOwnChildren(BuildEntity entity) => true;
 
-    public static BuildEntity From(Base targetBase)
+    public static BuildEntity From(Base targetBase, EntityMetadataManager entityMetadataManager)
     {
         BuildEntity buildEntity = BuildEntity.MakeEmpty();
         if (targetBase.TryGetNitroxId(out NitroxId baseId))
@@ -71,73 +90,39 @@ public class BuildEntitySpawner : EntitySpawner<BuildEntity>
         buildEntity.Transform = targetBase.transform.ToLocalDto();
 
         buildEntity.BaseData = GetBaseData(targetBase);
-        buildEntity.ChildEntities.AddRange(BuildUtils.GetChildEntities(targetBase, baseId));
+        buildEntity.ChildEntities.AddRange(BuildUtils.GetChildEntities(targetBase, baseId, entityMetadataManager));
 
         return buildEntity;
     }
 
     public static BaseData GetBaseData(Base targetBase)
     {
-        Func<byte[], byte[]> c = BaseSerializationHelper.CompressBytes;
-
-        BaseData baseData = new()
+        return new BaseData()
         {
-            BaseShape = targetBase.baseShape.ToInt3().ToDto()
+            BaseShape = targetBase.baseShape.ToInt3().ToDto(),
+            Faces = BaseSerializationHelper.CompressData(targetBase.faces, faceType => (byte)faceType),
+            Cells = BaseSerializationHelper.CompressData(targetBase.cells, cellType => (byte)cellType),
+            Links = BaseSerializationHelper.CompressBytes(targetBase.links),
+            PreCompressionSize = targetBase.links.Length,
+            CellOffset = targetBase.cellOffset.ToDto(),
+            Masks = BaseSerializationHelper.CompressBytes(targetBase.masks),
+            IsGlass = BaseSerializationHelper.CompressData(targetBase.isGlass, isGlass => isGlass ? (byte)1 : (byte)0),
+            Anchor = targetBase.anchor.ToDto()
         };
-        if (targetBase.faces != null)
-        {
-            baseData.Faces = c(Array.ConvertAll(targetBase.faces, faceType => (byte)faceType));
-        }
-        if (targetBase.cells != null)
-        {
-            baseData.Cells = c(Array.ConvertAll(targetBase.cells, cellType => (byte)cellType));
-        }
-        if (targetBase.links != null)
-        {
-            baseData.Links = c(targetBase.links);
-            baseData.PreCompressionSize = targetBase.links.Length;
-        }
-        baseData.CellOffset = targetBase.cellOffset.ToDto();
-        if (targetBase.masks != null)
-        {
-            baseData.Masks = c(targetBase.masks);
-        }
-        if (targetBase.isGlass != null)
-        {
-            baseData.IsGlass = c(Array.ConvertAll(targetBase.isGlass, isGlass => isGlass ? (byte)1 : (byte)0));
-        }
-        baseData.Anchor = targetBase.anchor.ToDto();
-        return baseData;
     }
 
     public static void ApplyBaseData(BaseData baseData, Base @base)
     {
-        Func<byte[], int, byte[]> d = BaseSerializationHelper.DecompressBytes;
         int size = baseData.PreCompressionSize;
 
         @base.baseShape = new(); // Reset it so that the following instruction is understood as a change
         @base.SetSize(baseData.BaseShape.ToUnity());
-        if (baseData.Faces != null)
-        {
-            @base.faces = Array.ConvertAll(d(baseData.Faces, size * 6), faceType => (Base.FaceType)faceType);
-        }
-        if (baseData.Cells != null)
-        {
-            @base.cells = Array.ConvertAll(d(baseData.Cells, size), cellType => (Base.CellType)cellType);
-        }
-        if (baseData.Links != null)
-        {
-            @base.links = d(baseData.Links, size);
-        }
+        @base.faces = BaseSerializationHelper.DecompressData(baseData.Faces, size * 6, faceType => (Base.FaceType)faceType);
+        @base.cells = BaseSerializationHelper.DecompressData(baseData.Cells, size, cellType => (Base.CellType)cellType);
+        @base.links = BaseSerializationHelper.DecompressBytes(baseData.Links, size);
         @base.cellOffset = new(baseData.CellOffset.ToUnity());
-        if (baseData.Masks != null)
-        {
-            @base.masks = d(baseData.Masks, size);
-        }
-        if (baseData.IsGlass != null)
-        {
-            @base.isGlass = Array.ConvertAll(d(baseData.IsGlass, size), num => num == 1);
-        }
+        @base.masks = BaseSerializationHelper.DecompressBytes(baseData.Masks, size);
+        @base.isGlass = BaseSerializationHelper.DecompressData(baseData.IsGlass, size, num => num == 1);
         @base.anchor = new(baseData.Anchor.ToUnity());
     }
 
@@ -148,17 +133,31 @@ public class BuildEntitySpawner : EntitySpawner<BuildEntity>
         NitroxEntity.SetNewId(@base.gameObject, buildEntity.Id);
         ApplyBaseData(buildEntity.BaseData, @base);
 
+        // Ghosts need an active base to be correctly spawned onto it
+        // While the rest must be spawned earlier for the base to load correctly (mostly InteriorPieceEntity)
+        // Which is why the spawn loops are separated by the SetActive instruction
+        // NB: We aim at spawning very precise entity types (InteriorPieceEntity, ModuleEntity and GlobalRootEntity)
+        // Thus we use GetType() == instead of "is GlobalRootEntity" so that derived types from it aren't selected
+        List<GhostEntity> ghostChildrenEntities = new();
         foreach (Entity childEntity in buildEntity.ChildEntities)
         {
-            if (childEntity is InteriorPieceEntity || (childEntity is ModuleEntity && childEntity is not GhostEntity))
+            if (childEntity is InteriorPieceEntity || childEntity is ModuleEntity ||
+                childEntity.GetType() == typeof(GlobalRootEntity))
             {
-                yield return entities.SpawnAsync(childEntity);
+                switch (childEntity)
+                {
+                    case GhostEntity ghostEntity:
+                        ghostChildrenEntities.Add(ghostEntity);
+                        continue;
+                }
+
+                yield return entities.SpawnEntityAsync(childEntity, true);
             }
         }
 
         baseObject.SetActive(true);
 
-        foreach (GhostEntity childGhostEntity in buildEntity.ChildEntities.OfType<GhostEntity>())
+        foreach (GhostEntity childGhostEntity in ghostChildrenEntities)
         {
             yield return GhostEntitySpawner.RestoreGhost(@base.transform, childGhostEntity);
         }

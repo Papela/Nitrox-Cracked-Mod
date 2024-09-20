@@ -1,7 +1,6 @@
 using System.Collections;
-using NitroxClient.Helpers;
 using NitroxClient.MonoBehaviours;
-using NitroxClient.MonoBehaviours.Overrides;
+using NitroxClient.MonoBehaviours.CinematicController;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures.GameLogic.Entities;
 using NitroxModel.DataStructures.Util;
@@ -40,7 +39,6 @@ public class VehicleWorldEntitySpawner : IWorldEntitySpawner
 
             if (constructor && withinDistance)
             {
-                Log.Debug("SpawnViaConstructor");
                 MobileVehicleBay.TransmitLocalSpawns = false;
                 yield return SpawnViaConstructor(vehicleEntity, constructor, result);
                 MobileVehicleBay.TransmitLocalSpawns = true;

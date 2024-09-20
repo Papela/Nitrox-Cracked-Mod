@@ -1,8 +1,8 @@
+using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using NitroxModel.Helper;
 using NitroxPatcher.PatternMatching;
-using System.Collections.Generic;
-using System.Reflection;
 using static System.Reflection.Emit.OpCodes;
 
 namespace NitroxPatcher.Patches.Dynamic;
@@ -22,7 +22,8 @@ public sealed partial class Constructable_DeconstructAsync_Patch : NitroxPatch, 
     public static readonly List<CodeInstruction> InstructionsToAdd = new()
     {
         new(Ldloc_1),
-        new(Call, Reflect.Method(() => Constructable_Construct_Patch.ConstructionAmountModified(default)))
+        new(Ldc_I4_0), // False for "constructing"
+        new(Call, Reflect.Method(() => Constructable_Construct_Patch.ConstructionAmountModified(default, default)))
     };
 
     public static IEnumerable<CodeInstruction> Transpiler(MethodBase original, IEnumerable<CodeInstruction> instructions) =>

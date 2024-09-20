@@ -13,7 +13,7 @@ public static class GhostMetadataRetriever
     public static GhostMetadata GetMetadataForGhost(BaseGhost baseGhost)
     {
         // Specific case in which a piece was deconstructed and resulted in a BaseDeconstructable with a normal BaseGhost
-        if (BuildUtils.IsUnderBaseDeconstructable(baseGhost))
+        if (BuildUtils.IsUnderBaseDeconstructable(baseGhost, true))
         {
             return GetBaseDeconstructableMetadata(baseGhost);
         }
@@ -39,13 +39,13 @@ public static class GhostMetadataRetriever
     public static BaseDeconstructableGhostMetadata GetBaseDeconstructableMetadata(this BaseGhost baseGhost)
     {
         BaseDeconstructableGhostMetadata metadata = baseGhost.GetMetadata<BaseDeconstructableGhostMetadata>();
-        if (baseGhost.TryGetComponentInParent(out ConstructableBase constructableBase) && constructableBase.moduleFace.HasValue)
+        if (baseGhost.TryGetComponentInParent(out ConstructableBase constructableBase, true) && constructableBase.moduleFace.HasValue)
         {
             Base.Face moduleFace = constructableBase.moduleFace.Value;
             metadata.ModuleFace = moduleFace.ToDto();
             moduleFace.cell += baseGhost.targetBase.GetAnchor();
-            IBaseModule baseModule = baseGhost.targetBase.GetModule(moduleFace);
-            if (baseModule != null && (baseModule as MonoBehaviour).TryGetComponent(out PrefabIdentifier identifier))
+            Component baseModule = baseGhost.targetBase.GetModule(moduleFace).AliveOrNull();
+            if (baseModule && baseModule.TryGetComponent(out PrefabIdentifier identifier))
             {
                 metadata.ClassId = identifier.ClassId;
             }

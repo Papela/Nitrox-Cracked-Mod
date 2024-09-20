@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NitroxClient.GameLogic.Spawning.Bases;
+using NitroxClient.GameLogic.Spawning.Metadata;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures;
@@ -18,9 +19,9 @@ public static class BuildUtils
     public static bool TryGetIdentifier(BaseDeconstructable baseDeconstructable, out BuildPieceIdentifier identifier, BaseCell baseCell = null, Base.Face? baseFace = null)
     {
         // It is unimaginable to have a BaseDeconstructable that is not child of a BaseCell
-        if (!baseCell && !baseDeconstructable.TryGetComponentInParent(out baseCell))
+        if (!baseCell && !baseDeconstructable.TryGetComponentInParent(out baseCell, true))
         {
-            identifier = new();
+            identifier = default;
             return false;
         }
 
@@ -55,7 +56,7 @@ public static class BuildUtils
                     face.cell += faceGhost.targetBase.GetAnchor();
                     return true;
                 }
-                else if (BaseAddFaceGhost.FindFirstMaskedFace(faceGhost.ghostBase, out face))
+                if (BaseAddFaceGhost.FindFirstMaskedFace(faceGhost.ghostBase, out face))
                 {
                     Vector3 point = faceGhost.ghostBase.GridToWorld(Int3.zero);
                     faceGhost.targetOffset = faceGhost.targetBase.WorldToGrid(point);
@@ -81,15 +82,14 @@ public static class BuildUtils
     }
 
     /// <remarks>
-    /// Even if the corresponding module was found, in some cases (with WaterParks notably) we don't want to transfer the id
-    /// we then return false because the gameobject may have already been marked.
+    /// Even if the corresponding module was found, in some cases (with WaterParks notably) we don't want to transfer the id.
+    /// We then return false because the GameObject may have already been marked.
     /// </remarks>
     /// <returns>
     /// Whether or not the id was successfully transferred
     /// </returns>
     public static bool TryTransferIdFromGhostToModule(BaseGhost baseGhost, NitroxId id, ConstructableBase constructableBase, out GameObject moduleObject)
     {
-        Log.Debug($"TryTransferIdFromGhostToModule({baseGhost},{id})");
         // 1. Find the face of the target piece
         Base.Face? face = null;
         bool isWaterPark = baseGhost is BaseAddWaterPark;
@@ -123,13 +123,10 @@ public static class BuildUtils
                 case TechType.BaseWaterPark:
                     // Edge case that happens when a Deconstructed WaterPark is built onto another deconstructed WaterPark that has its module
                     // A new module will be created by the current Deconstructed WaterPark which is the one we'll be aiming at
-                    if (!isWaterPark)
+                    IBaseModuleGeometry baseModuleGeometry = constructableBase.GetComponentInChildren<IBaseModuleGeometry>(true);
+                    if (baseModuleGeometry != null)
                     {
-                        IBaseModuleGeometry baseModuleGeometry = constructableBase.GetComponentInChildren<IBaseModuleGeometry>(true);
-                        if (baseModuleGeometry != null)
-                        {
-                            face = baseModuleGeometry.geometryFace;
-                        }
+                        face = baseModuleGeometry.geometryFace;
                     }
                     break;
 
@@ -190,21 +187,19 @@ public static class BuildUtils
             // If the WaterPark is higher than one, it means that the newly built WaterPark will be merged with one that already has a NitroxEntity
             if (module is WaterPark waterPark && waterPark.height > 1)
             {
-                Log.Debug($"Found WaterPark higher than 1 [{waterPark.height}], not transferring NitroxEntity to it");
                 // as the WaterPark is necessarily merged, we won't need to do anything about it
                 moduleObject = null;
                 return false;
             }
 
-            Log.Debug($"Successfully transferred NitroxEntity to {module} [{id}]");
             moduleObject = (module as Component).gameObject;
             NitroxEntity.SetNewId(moduleObject, id);
             return true;
         }
         // When a WaterPark is merged with another one, we won't find its module but we don't care about that
-        else if (!isWaterPark)
+        if (!isWaterPark)
         {
-            Log.Error("Couldn't find the module's GameObject of built interior piece when transfering its NitroxEntity to the module.");
+            Log.Error("Couldn't find the module's GameObject of built interior piece when transferring its NitroxEntity to the module.");
         }
 
         moduleObject = null;
@@ -224,10 +219,10 @@ public static class BuildUtils
     /// A BaseDeconstructable's ghost component is a simple BaseGhost so we need to identify it by the parent ConstructableBase instead.
     /// </remarks>
     /// <param name="faceAlreadyLinked">Whether <see cref="ConstructableBase.moduleFace"/> was already set or not</param>
-    public static bool IsUnderBaseDeconstructable(BaseGhost baseGhost, bool faceNotLinked = false)
+    public static bool IsUnderBaseDeconstructable(BaseGhost baseGhost, bool faceAlreadyLinked)
     {
-        return baseGhost.TryGetComponentInParent(out ConstructableBase constructableBase) &&
-            (IsBaseDeconstructable(constructableBase) || faceNotLinked);
+        return baseGhost.TryGetComponentInParent(out ConstructableBase constructableBase, true) &&
+            (IsBaseDeconstructable(constructableBase) || !faceAlreadyLinked);
     }
 
     public static Int3 GetMapRoomFunctionalityCell(BaseGhost baseGhost)
@@ -236,20 +231,21 @@ public static class BuildUtils
         return baseGhost.targetBase.NormalizeCell(baseGhost.targetBase.WorldToGrid(baseGhost.ghostBase.occupiedBounds.center));
     }
 
-    public static MapRoomEntity GetMapRoomEntityFrom(MapRoomFunctionality mapRoomFunctionality, Base @base, NitroxId id, NitroxId parentId)
+    public static MapRoomEntity CreateMapRoomEntityFrom(MapRoomFunctionality mapRoomFunctionality, Base @base, NitroxId id, NitroxId parentId)
     {
         Int3 mapRoomCell = @base.NormalizeCell(@base.WorldToGrid(mapRoomFunctionality.transform.position));
         return new(id, parentId, mapRoomCell.ToDto());
     }
 
-    public static List<GlobalRootEntity> GetGlobalRootChildren(Transform globalRoot)
+    // TODO: Use this for a latter singleplayer save converter
+    public static List<GlobalRootEntity> GetGlobalRootChildren(Transform globalRoot, EntityMetadataManager entityMetadataManager)
     {
         List<GlobalRootEntity> entities = new();
         foreach (Transform child in globalRoot)
         {
             if (child.TryGetComponent(out Base @base))
             {
-                entities.Add(BuildEntitySpawner.From(@base));
+                entities.Add(BuildEntitySpawner.From(@base, entityMetadataManager));
             }
             else if (child.TryGetComponent(out Constructable constructable))
             {
@@ -264,9 +260,15 @@ public static class BuildUtils
         return entities;
     }
 
-    public static List<Entity> GetChildEntities(Base targetBase, NitroxId baseId)
+    public static List<Entity> GetChildEntities(Base targetBase, NitroxId baseId, EntityMetadataManager entityMetadataManager)
     {
         List<Entity> childEntities = new();
+        void AddChild(Entity childEntity)
+        {
+            // Making sure that childEntities are correctly parented
+            childEntity.ParentId = baseId;
+            childEntities.Add(childEntity);
+        }
 
         foreach (Transform transform in targetBase.transform)
         {
@@ -276,8 +278,7 @@ public static class BuildUtils
                 {
                     continue;
                 }
-                Log.Debug($"MapRoom found {mapRoomId} in {mapRoomFunctionality.gameObject} under {mapRoomFunctionality.transform.parent}");
-                childEntities.Add(GetMapRoomEntityFrom(mapRoomFunctionality, targetBase, mapRoomId, baseId));
+                AddChild(CreateMapRoomEntityFrom(mapRoomFunctionality, targetBase, mapRoomId, baseId));
             }
             else if (transform.TryGetComponent(out IBaseModule baseModule))
             {
@@ -287,32 +288,29 @@ public static class BuildUtils
                     continue;
                 }
                 MonoBehaviour moduleMB = baseModule as MonoBehaviour;
-                Log.Debug($"Base module found: {baseModule.GetType().FullName}  in {moduleMB.gameObject} under {moduleMB.transform.parent}");
-                childEntities.Add(InteriorPieceEntitySpawner.From(baseModule));
+                AddChild(InteriorPieceEntitySpawner.From(baseModule, entityMetadataManager));
             }
             else if (transform.TryGetComponent(out Constructable constructable))
             {
                 if (constructable is ConstructableBase constructableBase)
                 {
-                    Log.Debug($"BaseConstructable found: {constructableBase.name}");
-                    childEntities.Add(GhostEntitySpawner.From(constructableBase));
+                    AddChild(GhostEntitySpawner.From(constructableBase));
                     continue;
                 }
-                Log.Debug($"Constructable found: {constructable.name}");
-                childEntities.Add(ModuleEntitySpawner.From(constructable));
+                AddChild(ModuleEntitySpawner.From(constructable));
             }
         }
 
         if (targetBase.TryGetComponent(out MoonpoolManager nitroxMoonpool))
         {
-            childEntities.AddRange(nitroxMoonpool.GetSavedMoonpools());
+            nitroxMoonpool.GetSavedMoonpools().ForEach(AddChild);
         }
 
-        // Making sure that childEntities are correctly parented
-        foreach (Entity childEntity in childEntities)
-        {
-            childEntity.ParentId = baseId;
-        }
         return childEntities;
+    }
+
+    public static Component AliveOrNull(this IBaseModule baseModule)
+    {
+        return (baseModule as Component).AliveOrNull();
     }
 }
