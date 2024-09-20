@@ -19,7 +19,8 @@ namespace NitroxLauncher.Models.Converters
             return platform switch
             {
                 Platform.EPIC => "pack://application:,,,/Assets/Images/store-icons/epic-2x.png",
-                Platform.STEAM => "pack://application:,,,/Assets/Images/store-icons/steam-2x.png",
+                //Platform.STEAM => "pack://application:,,,/Assets/Images/store-icons/steam-2x.png",
+                Platform.STEAM => "pack://application:,,,/Assets/Images/store-icons/pirate-2x.png",
                 Platform.MICROSOFT => "pack://application:,,,/Assets/Images/store-icons/xbox-2x.png",
                 Platform.DISCORD => "pack://application:,,,/Assets/Images/store-icons/discord-2x.png",
                 _ => "pack://application:,,,/Assets/Images/store-icons/missing-2x.png",
