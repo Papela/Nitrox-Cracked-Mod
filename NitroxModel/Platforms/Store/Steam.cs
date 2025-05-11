@@ -150,20 +150,12 @@ public sealed class Steam : IGamePlatform
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-#if DEBUG // Needed to start multiple SN instances, but Steam Overlay doesn't work this way so only active for devs
             return ProcessEx.Start(
                 pathToGameExe,
                 [("SteamGameId", steamAppId.ToString()), ("SteamAppID", steamAppId.ToString()), (NitroxUser.LAUNCHER_PATH_ENV_KEY, NitroxUser.LauncherPath)],
                 Path.GetDirectoryName(pathToGameExe),
                 launchArguments
             );
-#else
-            return new ProcessEx(Process.Start(new ProcessStartInfo
-            {
-                FileName = GetExeFile(),
-                Arguments = $"""-applaunch {steamAppId} --nitrox "{NitroxUser.LauncherPath}" {launchArguments}"""
-            }));
-#endif
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))

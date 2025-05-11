@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -16,10 +16,10 @@ namespace Nitrox.Launcher.Models.Utils;
 
 public partial class Downloader
 {
-    public const string BLOGS_URL = "https://nitroxblog.rux.gg/wp-json/wp/v2/posts?per_page=8&page=1";
-    public const string LATEST_VERSION_URL = "https://nitrox.rux.gg/api/version/latest";
-    public const string CHANGELOGS_URL = "https://nitrox.rux.gg/api/changelog/releases";
-    public const string RELEASES_URL = "https://nitrox.rux.gg/api/version/releases";
+    public const string BLOGS_URL = "https://papela.github.io/Online-Repos/Nitrox/blog.json";
+    public const string LATEST_VERSION_URL = "https://papela.github.io/Online-Repos/Nitrox/latest.json";
+    public const string CHANGELOGS_URL = "https://papela.github.io/Online-Repos/Nitrox/changelog.json";
+    public const string RELEASES_URL = "https://papela.github.io/Online-Repos/Nitrox/releases.json";
 
     [GeneratedRegex(@"""version"":""([^""]*)""")]
     private static partial Regex JsonVersionFieldRegex { get; }

@@ -35,7 +35,7 @@
                     Grid.Column="0"
                     Margin="0,0,20,0"
                     FontSize="14"
-                    Text="Start your Subnautica adventure in multiplayer mode together with your friends, powered by the Nitrox mod: An open-source, modification for the game Subnautica. The project is maintained by the community with regular support and updates from its contributors." />
+                    Text="Start your Subnautica adventure in multiplayer mode together with your friends, powered by the Nitrox Unlocked Mod: An open-source, modification for the game Subnautica. This project is not related or linked to original Nitrox. Official support is not responsible for helping you with this version." />
                 <!--  Play buttons - Negative offset to add some overlap with the background image  -->
                 <StackPanel Grid.Column="1" Margin="0,-110,0,0">
                     <Border ClipToBounds="True" CornerRadius="10">
@@ -146,7 +146,7 @@
                     </WrapPanel>
                     <TextBlock Text="STAFF" />
                     <TextBlock>
-                        Werewolfs, Shalix, SavageJay, and a big thanks to the discord support team (Arctic-Peepers, Peepers)
+                        Papela (The one who unlocked it) ;), Werewolfs, Shalix, SavageJay, and a big thanks to the discord support team (Arctic-Peepers, Peepers)
                     </TextBlock>
                     <TextBlock Text="DESIGN" />
                     <controls:RichTextBlock>

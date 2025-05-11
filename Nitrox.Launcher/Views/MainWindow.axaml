@@ -197,21 +197,6 @@
                             </RadioButton>
                             <TextBlock Classes="subheader">EXPLORE</TextBlock>
                             <RadioButton
-                                Command="{Binding OpenCommunityViewCommand}"
-                                Content="Community"
-                                Tag="/Assets/Images/tabs-icons/community.png"
-                                ToolTip.Tip="Join Nitrox community">
-                                <RadioButton.IsChecked>
-                                    <Binding Path="ActiveViewModel" Converter="{converters:IsTypeConverter}" Mode="OneWay">
-                                        <Binding.ConverterParameter>
-                                            <generic:List x:TypeArguments="system:Type">
-                                                <x:Type TypeName="vm:CommunityViewModel" />
-                                            </generic:List>
-                                        </Binding.ConverterParameter>
-                                    </Binding>
-                                </RadioButton.IsChecked>
-                            </RadioButton>
-                            <RadioButton
                                 Command="{Binding OpenBlogViewCommand}"
                                 Content="Blog"
                                 Tag="/Assets/Images/tabs-icons/blog.png"
@@ -221,6 +206,21 @@
                                         <Binding.ConverterParameter>
                                             <generic:List x:TypeArguments="system:Type">
                                                 <x:Type TypeName="vm:BlogViewModel" />
+                                            </generic:List>
+                                        </Binding.ConverterParameter>
+                                    </Binding>
+                                </RadioButton.IsChecked>
+                            </RadioButton>
+                            <RadioButton
+                                Command="{Binding OpenCommunityViewCommand}"
+                                Content="Info "
+                                Tag="/Assets/Images/tabs-icons/info.png"
+                                ToolTip.Tip="Join Nitrox community">
+                                <RadioButton.IsChecked>
+                                    <Binding Path="ActiveViewModel" Converter="{converters:IsTypeConverter}" Mode="OneWay">
+                                        <Binding.ConverterParameter>
+                                            <generic:List x:TypeArguments="system:Type">
+                                                <x:Type TypeName="vm:CommunityViewModel" />
                                             </generic:List>
                                         </Binding.ConverterParameter>
                                     </Binding>
@@ -396,5 +396,10 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </Grid>
+        <TextBlock DockPanel.Dock="Bottom" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+           Foreground="#FFFF00" Margin="5,0,0,5">
+            Unlocked by Papela
+        </TextBlock>
+
     </Panel>
 </Window>

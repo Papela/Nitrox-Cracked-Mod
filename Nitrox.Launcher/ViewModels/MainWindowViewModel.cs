@@ -101,6 +101,9 @@ public partial class MainWindowViewModel : ViewModelBase
             });
         }
 
+        LauncherNotifier.Warning("V.1.8.0.3");
+        LauncherNotifier.Success("You are using a Unlocked Version made by Papela.");
+
         ActiveViewModel = this.launchGameViewModel;
         _ = RoutingScreen.ShowAsync(launchGameViewModel).ContinueWithHandleError(ex => LauncherNotifier.Error(ex.Message));
     }

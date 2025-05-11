@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -70,7 +70,6 @@ public partial class OptionsViewModel : RoutableViewModelBase
 
         LaunchGameViewModel.LastFindSubnauticaTask = Task.Run(() =>
         {
-            PirateDetection.TriggerOnDirectory(path);
 
             if (!FileSystem.Instance.IsWritable(Directory.GetCurrentDirectory()) || !FileSystem.Instance.IsWritable(path))
             {

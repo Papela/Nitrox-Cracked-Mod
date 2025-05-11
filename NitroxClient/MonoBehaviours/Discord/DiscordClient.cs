@@ -135,14 +135,16 @@ public class DiscordClient : MonoBehaviour
     public static void InitializeRPMenu()
     {
         activity.State = Language.main.Get("Nitrox_DiscordMainMenuState");
+        activity.Details = "Unlocked by Papela";
         activity.Assets.LargeImage = "icon";
+        activity.Timestamps.Start = 0;
         UpdateActivity();
     }
 
     public static void InitializeRPInGame(string username, int playerCount, int maxConnections)
     {
         activity.State = Language.main.Get("Nitrox_DiscordInGameState");
-        activity.Details = Language.main.Get("Nitrox_DiscordInGame").Replace("{PLAYER}", username);
+        activity.Details = Language.main.Get("Nitrox_DiscordInGame").Replace("{PLAYER}", username) + " - (Papela Mod)";
         activity.Timestamps.Start = 0;
         activity.Party.Size.CurrentSize = playerCount;
         activity.Party.Size.MaxSize = maxConnections;

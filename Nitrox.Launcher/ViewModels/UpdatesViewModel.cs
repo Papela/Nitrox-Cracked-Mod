@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Threading;
@@ -85,6 +85,6 @@ public partial class UpdatesViewModel : RoutableViewModelBase
     [RelayCommand]
     private void DownloadUpdate()
     {
-        ProcessUtils.OpenUrl("nitrox.rux.gg/download");
+        ProcessUtils.OpenUrl("github.com/Papela/Nitrox-Cracked-Mod/releases/latest");
     }
 }
