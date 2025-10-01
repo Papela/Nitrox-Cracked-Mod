@@ -20,13 +20,13 @@ internal sealed class NitroxBlogService
     {
         this.httpClient = httpClient;
         this.httpImageService = httpImageService;
-        httpClient.BaseAddress = new Uri("https://nitroxblog.rux.gg/wp-json/wp/v2/");
+        httpClient.BaseAddress = new Uri("https://papela.github.io/Online-Repos/Nitrox/");
         httpClient.DefaultRequestHeaders.CacheControl!.MaxAge = TimeSpan.FromDays(7);
     }
 
     public async IAsyncEnumerable<NitroxBlog> GetBlogPostsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        BlogPost[] blogs = await httpClient.GetFromJsonAsync<BlogPost[]>("posts?per_page=8&page=1", cancellationToken);
+        BlogPost[] blogs = await httpClient.GetFromJsonAsync<BlogPost[]>("blog.json", cancellationToken);
         foreach (BlogPost blog in blogs)
         {
             cancellationToken.ThrowIfCancellationRequested();

@@ -111,11 +111,6 @@ internal partial class LaunchGameViewModel(DialogService dialogService, ServerSe
                     LauncherNotifier.Warning("Location of Subnautica is unknown. Set the path to it in settings");
                     return false;
                 }
-                if (PirateDetection.HasTriggered)
-                {
-                    LauncherNotifier.Error("Aarrr! Nitrox has walked the plank :(");
-                    return false;
-                }
                 if (GameInspect.WarnIfGameProcessExists(GameInfo.Subnautica) && !keyValueStore.GetIsMultipleGameInstancesAllowed())
                 {
                     return false;

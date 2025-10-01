@@ -22,8 +22,8 @@
                     Url="example.com" />
                 <design:NitroxBlog
                     Date="2020-01-10"
-                    Title="Nitrox Website"
-                    Url="nitrox.rux.gg" />
+                    Title="Nitrox Unlocked Website"
+                    Url="github.com/Papela" />
             </vm:BlogViewModel.NitroxBlogs>
         </vm:BlogViewModel>
     </Design.DataContext>
@@ -36,7 +36,7 @@
             <StackPanel Spacing="15">
                 <TextBlock Classes="header" Text="Blog" />
                 <controls:RichTextBlock>
-                    Read the latest news from the Nitrox team! You can view all our blogs [here](nitroxblog.rux.gg)
+                    Blog modified by the unlocked version. You can read the original blog [here](https://papela.github.io/Online-Repos/Nitrox/blog.json)
                 </controls:RichTextBlock>
             </StackPanel>
 

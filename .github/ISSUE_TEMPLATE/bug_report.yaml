@@ -6,41 +6,25 @@ body:
   - type: markdown
     attributes:
       value: |
-        # This no place to seek help with installation or connection problems. For that visit our [Discord](https://discord.com/invite/E8B4X9s).
-        ## Thanks for filling out a bug report. Please be sure that a similar issue wasn't already created by searching [here](https://github.com/SubnauticaNitrox/Nitrox/issues) with general keywords. If it's a new issue please fill out as much detail as possible.
+        # This is not the official Nitrox repository. (This is the repository of the unlocked mod)
+        ## Before opening an issue, check the FAQ to see if your problem is there.
         
   - type: dropdown
     id: nitrox_version
     attributes:
-      label: Are you on the latest version of Nitrox?
+      label: Are you on the latest version of Nitrox Cracked Mod?
       description: If not, you should try updating first.
       options:
-        - Yes, I'm on the latest release of Nitrox.
-        - Yes, I'm on the latest commit of the repo (only for experts).
+        - Yes, I'm on the latest release of Nitrox Cracked Mod.
         - No, I need to download a newer version and try again.
     validations:
       required: true
-  - type: dropdown
-    id: os_type
+  - type: textarea
+    id: game_version
     attributes:
-      label: Which OS are you playing on?
-      description: Please select your Operating System from the dropdown.
-      options:
-        - Windows
-        - Linux (currently not supported, don't file any reports if your are using this)
-        - MacOS (currently not supported, don't file any reports if your are using this)
-    validations:
-      required: true
-  - type: dropdown
-    id: store_type
-    attributes:
-      label: On which platform did you buy Subnautica?
-      description: Please select your platform/store with which you are normally starting Subnautica.
-      options:
-        - Steam
-        - Epic
-        - MS-Store/Windows Store (currently not supported, don't file any reports if your are using this)
-        - Other
+      label: What version of Subnautica are you using?
+      description: The game version is located at the top right in the main menu of the game.
+      placeholder:  For example Jun.-2025 (82304)
     validations:
       required: true
   - type: textarea

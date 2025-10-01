@@ -18,12 +18,12 @@ internal sealed class NitroxWebsiteApiService
     public NitroxWebsiteApiService(HttpClient httpClient)
     {
         this.httpClient = httpClient;
-        httpClient.BaseAddress = new Uri("https://nitrox.rux.gg/api/");
+        httpClient.BaseAddress = new Uri("https://papela.github.io/Online-Repos/Nitrox/");
     }
 
     public async Task<NitroxChangelog[]?> GetChangeLogsAsync(CancellationToken cancellationToken = default)
     {
-        ChangeLog[] changeLogs = await httpClient.GetFromJsonAsync<ChangeLog[]>("changelog/releases", cancellationToken: cancellationToken);
+        ChangeLog[] changeLogs = await httpClient.GetFromJsonAsync<ChangeLog[]>("changelog.json", cancellationToken: cancellationToken);
         NitroxChangelog[] result = new NitroxChangelog[changeLogs.Length];
         StringBuilder buffer = new();
         for (int i = 0; i < changeLogs.Length; i++)
@@ -33,7 +33,7 @@ internal sealed class NitroxWebsiteApiService
         return result;
     }
 
-    public async Task<NitroxRelease?> GetNitroxLatestVersionAsync() => await httpClient.GetFromJsonAsync<NitroxRelease>("version/latest");
+    public async Task<NitroxRelease?> GetNitroxLatestVersionAsync() => await httpClient.GetFromJsonAsync<NitroxRelease>("latest.json");
 
     public sealed record ChangeLog
     {

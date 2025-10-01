@@ -26,6 +26,6 @@ internal static class DtoExtensions
                 buffer.AppendLine($"• {patchNote}");
             }
         }
-        return new NitroxChangelog(changeLog.Version, changeLog.Released.DateTime, string.Join(Environment.NewLine, buffer.ToString()));
+        return new NitroxChangelog(changeLog.Version, changeLog.Released.DateTime, buffer.ToString());
     }
 }

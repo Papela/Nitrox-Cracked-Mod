@@ -89,9 +89,9 @@ internal partial class MainWindowViewModel : ViewModelBase, IRoutingScreen
             if (!NitroxEnvironment.IsReleaseMode)
             {
                 // Set debug default options here.
-                keyValueStore.SetIsMultipleGameInstancesAllowed(true);
-                LauncherNotifier.Info("You're now using Nitrox DEV build");
+                LauncherNotifier.Info("You're now using Nitrox Unlocked DEV build");
             }
+            keyValueStore.SetIsMultipleGameInstancesAllowed(true);
 
             Task.Run(async () =>
             {
@@ -102,6 +102,9 @@ internal partial class MainWindowViewModel : ViewModelBase, IRoutingScreen
                 }
                 UpdateAvailableOrUnofficial = await updatesViewModel.IsNitroxUpdateAvailableAsync();
             });
+
+            LauncherNotifier.Warning("V.1.8.0.3");
+            LauncherNotifier.Success("You are using a Unlocked Version made by Papela.");
 
             _ = this.ShowAsync(launchGameViewModel).ContinueWithHandleError(ex => LauncherNotifier.Error(ex.Message));
         }

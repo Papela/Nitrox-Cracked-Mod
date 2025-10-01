@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -88,7 +88,6 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
 
         LaunchGameViewModel.LastFindSubnauticaTask = Task.Run(() =>
         {
-            PirateDetection.TriggerOnDirectory(path);
 
             if (!FileSystem.Instance.IsWritable(Directory.GetCurrentDirectory()) || !FileSystem.Instance.IsWritable(path))
             {
@@ -162,7 +161,11 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
     {
         if (AllowMultipleGameInstances && SelectedGame.Platform == Platform.STEAM)
         {
-            LauncherNotifier.Warning("Note: Enabling this option will disable Steam's in-game overlay. Disable this option to use Steam's overlay");
+            LauncherNotifier.Warning("Note: Enabling this option will disable Steam's in-game overlay (unofficial games too). Disable this option to use Steam's overlay");
+        }
+        if (!AllowMultipleGameInstances && SelectedGame.Platform == Platform.STEAM)
+        {
+            LauncherNotifier.Warning("Note: Disabling this option will cause the unofficial game to stop working.");
         }
     }
 

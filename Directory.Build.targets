@@ -5,7 +5,7 @@
         <_GitShortHashFilePath>$(IntermediateOutputPath)git_short_hash.cache</_GitShortHashFilePath>
     </PropertyGroup>
 
-    <Target Name="_CreateGitShortHashCacheFile" Inputs="$(_GitRefHashFilePath)" Outputs="$(_GitShortHashFilePath)" Condition="Exists('$(_GitRefHashFilePath)')">
+    <Target Name="_CreateGitShortHashCacheFile" Inputs="$(_GitRefHashFilePath)" Outputs="$(_GitShortHashFilePath)">
         <Exec Command="git rev-parse --short HEAD" ConsoleToMsBuild="true" EchoOff="true" StandardOutputImportance="low" StandardErrorImportance="low">
             <Output TaskParameter="ConsoleOutput" PropertyName="_GitShortHash" />
         </Exec>
@@ -17,7 +17,7 @@
 
     <Target Name="_NitroxEmbedAssemblyInfo" AfterTargets="GetAssemblyAttributes" DependsOnTargets="PrepareForBuild;_CreateGitShortHashCacheFile">
         <PropertyGroup>
-            <_GitShortHash Condition="'$(_GitShortHash)' == '' and Exists('$(_GitShortHashFilePath)')">$([System.IO.File]::ReadAllText('$(_GitShortHashFilePath)').Trim())</_GitShortHash>
+            <_GitShortHash Condition="'$(_GitShortHash)' == ''">$([System.IO.File]::ReadAllText('$(_GitShortHashFilePath)').Trim())</_GitShortHash>
         </PropertyGroup>
 
         <ItemGroup>
@@ -38,17 +38,31 @@
         <ItemGroup>
             <_AllHexAttributes Include="@(AssemblyAttribute)" Condition="$([System.String]::new('%(AssemblyAttribute._Parameter1)').EndsWith('Hash'))" />
         </ItemGroup>
-        <Error Condition="'%(_AllHexAttributes._Parameter2)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('%(_AllHexAttributes._Parameter2)', '^[0-9a-fA-F]+$'))" Text="'Metadata attribute %(_AllHexAttributes._Parameter1) must be a suitable hexidecimal hash value but is '%(_AllHexAttributes._Parameter2)'" />
+        <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('%(_AllHexAttributes._Parameter2)', '^[0-9a-fA-F]+$'))" Text="'Metadata attribute %(_AllHexAttributes._Parameter1) must be a suitable hexidecimal hash value but is '%(_AllHexAttributes._Parameter2)'" />
     </Target>
 
     <Target Name="FindGameAndIncludeReferences" BeforeTargets="ResolveAssemblyReferences" Condition="'$(_NitroxDiscovery_TaskAssembly)' != '' and ('$(UnityModLibrary)' == 'true' or '$(TestLibrary)' == 'true')">
-        <DiscoverGame GameName="Subnautica" IntermediateOutputPath="$(IntermediateOutputPath)">
+
+        <!-- Permitir especificar SubnauticaPath manualmente -->
+        <PropertyGroup Condition="'$(SubnauticaPath)' != ''">
+            <GameDir>$(SubnauticaPath)</GameDir>
+        </PropertyGroup>
+
+        <Error Condition="'$(SubnauticaPath)' != '' and !Exists('$(SubnauticaPath)')"
+               Text="The manually specified Subnautica path '$(SubnauticaPath)' does not exist. Please verify the path is correct." />
+        <Error Condition="'$(SubnauticaPath)' != '' and !Exists('$(SubnauticaPath)\Subnautica.exe') and !Exists('$(SubnauticaPath)\Subnautica')"
+               Text="The specified path '$(SubnauticaPath)' does not appear to be a valid Subnautica installation directory. The Subnautica executable was not found." />
+
+        <DiscoverGame GameName="Subnautica" IntermediateOutputPath="$(IntermediateOutputPath)" Condition="'$(SubnauticaPath)' == ''">
             <Output TaskParameter="GamePath" PropertyName="GameDir" />
         </DiscoverGame>
-        <Error Condition="'$(GameDir)' == '' and '$(SUBNAUTICA_INSTALLATION_PATH)' == ''" Text="Failed to find the game 'Subnautica' on your machine" />
+
+        <Error Condition="'$(GameDir)' == '' and '$(SUBNAUTICA_INSTALLATION_PATH)' == '' and '$(SubnauticaPath)' == ''"
+               Text="Failed to find the game 'Subnautica' on your machine. You can specify the path manually using: dotnet build -p:SubnauticaPath=&quot;path/to/subnautica&quot;" />
+
         <PropertyGroup>
             <GameDir Condition="Exists('$(GameDir)')">$(GameDir)\</GameDir>
-            <GameDir Condition="!Exists('$(GameDir)')">$(SUBNAUTICA_INSTALLATION_PATH)\</GameDir>
+            <GameDir Condition="!Exists('$(GameDir)') and '$(SUBNAUTICA_INSTALLATION_PATH)' != ''">$(SUBNAUTICA_INSTALLATION_PATH)\</GameDir>
             <GameDataFolder>Subnautica_Data</GameDataFolder>
         </PropertyGroup>
         <PropertyGroup Condition="$(_IsMacOS)">

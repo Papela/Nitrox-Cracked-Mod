@@ -61,82 +61,17 @@
                         <Panel>
                             <Button
                                 Classes="anycontent"
-                                Command="{Binding DiscordLinkCommand}"
                                 ToolTip.Tip="Join Discord Server">
                                 <Border Background="#5865F2">
                                     <Svg Path="/Assets/Icons/brand/discord.svg" />
                                 </Border>
                             </Button>
-                            <Button
-                                Command="{Binding DiscordLinkCommand}"
-                                Content="Join Discord"
-                                ToolTip.Tip="Join Discord Server" />
                         </Panel>
                         <TextBlock Text="Discord" />
-                        <TextBlock Text="Join our active Discord server to find servers to play on, get help from the support team and much more." />
-                    </StackPanel>
-                </Border>
-                <Border>
-                    <StackPanel>
-                        <Grid>
-                            <Button
-                                Classes="anycontent"
-                                Command="{Binding XLinkCommand}"
-                                ToolTip.Tip="Follow on X">
-                                <Border Background="#000000">
-                                    <Svg Path="/Assets/Icons/brand/x.svg" />
-                                </Border>
-                            </Button>
-
-                            <Button
-                                Command="{Binding XLinkCommand}"
-                                Content="Follow"
-                                ToolTip.Tip="Follow on X" />
-                        </Grid>
-                        <TextBlock Text="X" />
-                        <TextBlock Text="Follow the Nitrox X account to always be up to date on latest developments, events, and releases." />
-                    </StackPanel>
-                </Border>
-                <Border>
-                    <StackPanel>
-                        <Grid>
-                            <Button
-                                Classes="anycontent"
-                                Command="{Binding BlueskyLinkCommand}"
-                                ToolTip.Tip="Follow on Bluesky">
-                                <Border Background="#1185fe">
-                                    <Svg Path="/Assets/Icons/brand/bluesky.svg" />
-                                </Border>
-                            </Button>
-
-                            <Button
-                                Command="{Binding BlueskyLinkCommand}"
-                                Content="Follow"
-                                ToolTip.Tip="Follow on Bluesky" />
-                        </Grid>
-                        <TextBlock Text="Bluesky" />
-                        <TextBlock Text="Follow the Nitrox Bluesky account to always be up to date on latest developments, events, and releases." />
-                    </StackPanel>
-                </Border>
-                <Border>
-                    <StackPanel>
-                        <Grid>
-                            <Button
-                                Classes="anycontent"
-                                Command="{Binding RedditLinkCommand}"
-                                ToolTip.Tip="Join Nitrox Subreddit">
-                                <Border Background="#FF4500">
-                                    <Svg Path="/Assets/Icons/brand/reddit.svg" />
-                                </Border>
-                            </Button>
-
-                            <Button
-                                Command="{Binding RedditLinkCommand}"
-                                Content="Join Subreddit"
-                                ToolTip.Tip="Join Nitrox Subreddit" />
-                        </Grid>
-                        <TextBlock Text="Reddit" />
-                        <TextBlock Text="Join the Nitrox Subreddit to stay informed about latest releases and post your own Nitrox content." />
+                        <TextBlock>
+                            <Run Text="Contact the person who created the unlocked version from his discord user: "/>
+                            <Run FontWeight="Bold" Text="Papela"/>
+                        </TextBlock>
                     </StackPanel>
                 </Border>
                 <Border>
@@ -156,8 +91,7 @@
                                 ToolTip.Tip="Contribute on GitHub" />
                         </Grid>
                         <TextBlock Text="GitHub" />
-                        <TextBlock Text="Want to be part of the team? Contribute from code to translations to the Nitrox project on GitHub." />
-                    </StackPanel>
+                        <TextBlock Text="This Mod is also open source and is open to receiving updates from other people." />                    </StackPanel>
                 </Border>
             </controls:FittingWrapPanel>
         </StackPanel>

@@ -6,11 +6,11 @@
     <!-- Framework properties -->
     <PropertyGroup>
         <LangVersion>13</LangVersion>
-        <Version>1.8.0.0</Version>
+        <Version>1.8.0.3</Version>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Prefer32Bit>false</Prefer32Bit>
         <DebugType>embedded</DebugType>
-        <Nullable>annotations</Nullable>
+        <Nullable>disable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
         <PathMap>$(MSBuildProjectDirectory)=$(MSBuildProjectName)</PathMap>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -20,6 +20,8 @@
 
     <!-- Nitrox specific properties -->
     <PropertyGroup>
+        <!-- Fix for dotnet build CLI ; MSBuildThisFileDirectory refers to the folder where Directory.Build.props is defined -->
+        <NitroxRootDir>$(MSBuildThisFileDirectory)</NitroxRootDir>
         <Authors>Nitrox</Authors>
         <Company>Nitrox</Company>
         <NitroxProject>false</NitroxProject>
@@ -56,17 +58,6 @@
         </PackageReference>
     </ItemGroup>
 
-    <Choose>
-        <When Condition="'$(TestLibrary)' == 'false'">
-            <ItemGroup>
-                <PackageReference Include="Nitrox.Analyzers" Version="*">
-                    <PrivateAssets>all</PrivateAssets>
-                    <IncludeAssets>build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-                </PackageReference>
-            </ItemGroup>
-        </When>
-    </Choose>
-
     <!-- Include default project references to all other "Nitrox*" projects -->
     <Choose>
         <When Condition="'$(UnityModLibrary)' == 'true' or '$(TestLibrary)' == 'true'">
@@ -78,6 +69,10 @@
                 <PackageReference Include="Nitrox.Discovery.MSBuild" Version="0.1.0">
                     <PrivateAssets>all</PrivateAssets>
                     <IncludeAssets>build; native; contentfiles; analyzers</IncludeAssets>
+                </PackageReference>
+                <PackageReference Include="Nitrox.Analyzers" Version="*">
+                    <PrivateAssets>all</PrivateAssets>
+                    <IncludeAssets>build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
                 </PackageReference>
             </ItemGroup>
         </When>

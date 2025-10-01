@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Collections;
@@ -94,5 +94,5 @@ internal partial class UpdatesViewModel(NitroxWebsiteApiService nitroxWebsiteApi
     }
 
     [RelayCommand]
-    private void DownloadUpdate() => OpenUri("nitrox.rux.gg/download");
+    private void DownloadUpdate() => OpenUri("github.com/Papela/Nitrox-Cracked-Mod/releases/latest");
 }
