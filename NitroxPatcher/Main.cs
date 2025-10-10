@@ -65,6 +65,7 @@ public static class Main
         AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
         AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += CurrentDomainOnAssemblyResolve;
 
+        Console.WriteLine("Checking if Nitrox should run...");
         if (!Directory.Exists(Environment.GetEnvironmentVariable(NitroxUser.LAUNCHER_PATH_ENV_KEY)))
         {
             Environment.SetEnvironmentVariable(NitroxUser.LAUNCHER_PATH_ENV_KEY, nitroxLauncherDir.Value, EnvironmentVariableTarget.Process);
@@ -75,6 +76,7 @@ public static class Main
             return;
         }
 
+        Console.WriteLine("Now initializing Nitrox...");
         InitWithDependencies();
     }
 
@@ -129,12 +131,16 @@ public static class Main
     /// <p/>
     /// Required to load the files from the Nitrox Launcher subfolder which would otherwise not be found.
     /// </summary>
-    private static Assembly CurrentDomainOnAssemblyResolve(object sender, ResolveEventArgs args)
+    private static Assembly? CurrentDomainOnAssemblyResolve(object sender, ResolveEventArgs args)
     {
         string dllFileName = args.Name.Split(',')[0];
         if (!dllFileName.EndsWith(".dll"))
         {
             dllFileName += ".dll";
+        }
+        if (dllFileName.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
         }
 
         // Load DLLs where Nitrox launcher is first, if not found, use Subnautica's DLLs.
