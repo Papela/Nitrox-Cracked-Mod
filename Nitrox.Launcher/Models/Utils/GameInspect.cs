@@ -3,8 +3,10 @@ using System.IO;
 using System.Threading.Tasks;
 using Nitrox.Launcher.Models.Services;
 using Nitrox.Launcher.ViewModels;
-using NitroxModel.Logger;
-using NitroxModel.Platforms.OS.Shared;
+using Nitrox.Model.Core;
+using Nitrox.Model.Helper;
+using Nitrox.Model.Logger;
+using Nitrox.Model.Platforms.OS.Shared;
 
 namespace Nitrox.Launcher.Models.Utils;
 
@@ -20,15 +22,15 @@ internal static class GameInspect
             ArgumentException.ThrowIfNullOrWhiteSpace(gameInstallDir);
             
             string gameVersionFile = Path.Combine(gameInstallDir, GameInfo.Subnautica.DataFolder, "StreamingAssets", "SNUnmanagedData", "plastic_status.ignore");
-            if (int.TryParse(await File.ReadAllTextAsync(gameVersionFile), out int gameVersion) && gameVersion <= 68598)
+            if (int.TryParse(await File.ReadAllTextAsync(gameVersionFile), out int gameVersion) && gameVersion < NitroxEnvironment.GameMinimumVersion)
             {
                 if (dialogService != null)
                 {
                     await dialogService.ShowAsync<DialogBoxViewModel>(model =>
                     {
-                        model.Title = "Legacy Game Detected";
+                        model.Title = "Outdated Game Detected";
                         model.Description =
-                            $"Nitrox does not support the legacy version of {GameInfo.Subnautica.FullName}. Please update your game to the latest version to run {GameInfo.Subnautica.FullName} with Nitrox.{Environment.NewLine}{Environment.NewLine}Version file location:{Environment.NewLine}{gameVersionFile}";
+                            $"Nitrox does not support the older {GameInfo.Subnautica.FullName} game version of {gameVersion}. Please update your game to the latest version.{Environment.NewLine}{Environment.NewLine}Minimum game version: {NitroxEnvironment.GameMinimumVersion}{Environment.NewLine}Version file location:{Environment.NewLine}{gameVersionFile}{Environment.NewLine}";
                         model.ButtonOptions = ButtonOptions.Ok;
                     });
                 }

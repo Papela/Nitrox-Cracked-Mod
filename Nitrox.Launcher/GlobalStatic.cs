@@ -1,6 +1,6 @@
 using System;
 using Avalonia.Controls;
-using NitroxModel.Platforms.OS.Shared;
+using Nitrox.Model.Platforms.OS.Shared;
 
 namespace Nitrox.Launcher;
 
@@ -13,10 +13,10 @@ internal static class GlobalStatic
 
     public static string GetServerExeName()
     {
-        string serverExeName = "NitroxServer-Subnautica.exe";
+        string serverExeName = "Nitrox.Server.Subnautica.exe";
         if (!OperatingSystem.IsWindows())
         {
-            serverExeName = "NitroxServer-Subnautica";
+            serverExeName = "Nitrox.Server.Subnautica";
         }
         return serverExeName;
     }
