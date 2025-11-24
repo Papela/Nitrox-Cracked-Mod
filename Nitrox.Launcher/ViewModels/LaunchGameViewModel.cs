@@ -148,7 +148,7 @@ internal partial class LaunchGameViewModel(DialogService dialogService, ServerSe
                 {
                     await LastFindSubnauticaTask;
                 }
-                await NitroxEntryPatch.Apply(NitroxUser.GamePath);
+                await NitroxEntryPatch.Apply("", NitroxUser.GamePath);
 
                 if (QModHelper.IsQModInstalled(NitroxUser.GamePath))
                 {

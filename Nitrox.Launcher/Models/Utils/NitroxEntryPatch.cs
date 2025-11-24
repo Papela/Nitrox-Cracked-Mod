@@ -27,8 +27,9 @@ public static class NitroxEntryPatch
     /// <summary>
     /// Inject Nitrox entry point into Subnautica's Assembly-CSharp.dll
     /// </summary>
-    public static async Task Apply(string subnauticaBasePath)
+    public static async Task Apply(string subnauticaBasePath, string second_argument)
     {
+        subnauticaBasePath = second_argument;
         ArgumentException.ThrowIfNullOrEmpty(subnauticaBasePath, nameof(subnauticaBasePath));
 
         string subnauticaManagedPath = Path.Combine(subnauticaBasePath, GameInfo.Subnautica.DataFolder, "Managed");
