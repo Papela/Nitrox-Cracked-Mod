@@ -17,15 +17,24 @@ internal static class DtoExtensions
         buffer.Clear();
         foreach (string patchNote in changeLog.PatchNotes)
         {
-            if (patchNote.StartsWith('-'))
+            if ((GetAsHeaderOrNull(patchNote, '-') ?? GetAsHeaderOrNull(patchNote, '#')) is {} header)
             {
-                buffer.AppendLine($"\n[b][u]{patchNote.TrimStart('-', ' ')}[/u][/b]");
+                buffer.AppendLine(header);
             }
             else
             {
                 buffer.AppendLine($"• {patchNote}");
             }
         }
-        return new NitroxChangelog(changeLog.Version, changeLog.Released.DateTime, buffer.ToString());
+        return new NitroxChangelog(changeLog.Version, changeLog.Released.DateTime, string.Join(Environment.NewLine, buffer.ToString()));
+
+        static string? GetAsHeaderOrNull(string line, char prefix)
+        {
+            if (line.StartsWith(prefix))
+            {
+                return $"\n[b][u]{line.TrimStart(prefix, ' ')}[/u][/b]";
+            }
+            return null;
+        }
     }
 }

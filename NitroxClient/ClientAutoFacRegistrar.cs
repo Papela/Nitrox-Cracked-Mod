@@ -8,7 +8,6 @@ using NitroxClient.Communication.NetworkingLayer.LiteNetLib;
 using NitroxClient.Communication.Packets.Processors.Abstract;
 using NitroxClient.Debuggers;
 using NitroxClient.GameLogic;
-using NitroxClient.GameLogic.ChatUI;
 using NitroxClient.GameLogic.FMOD;
 using NitroxClient.GameLogic.HUD;
 using NitroxClient.GameLogic.InitialSync.Abstract;
@@ -20,12 +19,12 @@ using NitroxClient.GameLogic.Settings;
 using NitroxClient.GameLogic.Spawning.Metadata;
 using NitroxClient.GameLogic.Spawning.Metadata.Extractor.Abstract;
 using NitroxClient.GameLogic.Spawning.Metadata.Processor.Abstract;
-using NitroxModel;
-using NitroxModel.Core;
-using NitroxModel.GameLogic.FMOD;
-using NitroxModel.Helper;
-using NitroxModel.Networking;
-using NitroxModel_Subnautica.Helper;
+using Nitrox.Model;
+using Nitrox.Model.Core;
+using Nitrox.Model.GameLogic.FMOD;
+using Nitrox.Model.Helper;
+using Nitrox.Model.Networking;
+using Nitrox.Model.Subnautica.Helper;
 
 namespace NitroxClient
 {
@@ -63,7 +62,7 @@ namespace NitroxClient
                             .AsSelf()
                             .SingleInstance();
 #endif
-            containerBuilder.Register(c => new NitroxProtobufSerializer($"{nameof(NitroxModel)}.dll"));
+            containerBuilder.Register(c => new NitroxProtobufSerializer($"{nameof(Nitrox)}.{nameof(Nitrox.Model)}.dll"));
 
             containerBuilder.RegisterType<UnityPreferenceStateProvider>()
                             .As<IPreferenceStateProvider>()
@@ -83,10 +82,6 @@ namespace NitroxClient
             containerBuilder.RegisterType<LocalPlayer>()
                             .AsSelf() //Would like to deprecate this registration at some point and just work through an abstraction.
                             .As<ILocalNitroxPlayer>()
-                            .InstancePerLifetimeScope();
-
-            containerBuilder.RegisterType<SubnauticaMap>()
-                            .As<IMap>()
                             .InstancePerLifetimeScope();
 
             containerBuilder.RegisterType<PlayerManager>().InstancePerLifetimeScope();
