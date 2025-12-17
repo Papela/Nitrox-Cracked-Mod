@@ -99,11 +99,7 @@ public class RemotePlayerCinematicController : MonoBehaviour, IManagedUpdateBeha
             {
                 for (int i = 0; i < animParamReceivers.Length; i++)
                 {
-                    if (animParamReceivers[i].GetComponent<IAnimParamReceiver>() != null)
-                    {
-                        animParamReceivers[i].GetComponent<IAnimParamReceiver>().ForwardAnimationParameterBool(receiversAnimParam, value);
-                    }
-                    
+                    animParamReceivers[i].GetComponent<IAnimParamReceiver>()?.ForwardAnimationParameterBool(receiversAnimParam, value);
                 }
             }
 
@@ -183,11 +179,7 @@ public class RemotePlayerCinematicController : MonoBehaviour, IManagedUpdateBeha
 
         foreach (GameObject animatedObject in animParamReceivers)
         {
-            if (animatedObject.GetComponent<IAnimParamReceiver>() != null)
-            {
-                animatedObject.GetComponent<IAnimParamReceiver>().ForwardAnimationParameterBool(paramaterName, vrAnimationMode);
-            }
-            
+            animatedObject.GetComponent<IAnimParamReceiver>()?.ForwardAnimationParameterBool(paramaterName, vrAnimationMode);
         }
     }
 
