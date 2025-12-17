@@ -1,12 +1,12 @@
 using System.Collections;
+using Nitrox.Model.DataStructures;
 using NitroxClient.Communication;
 using NitroxClient.GameLogic.Spawning.Abstract;
 using NitroxClient.MonoBehaviours;
-using NitroxClient.Unity.Helper;
-using NitroxModel.DataStructures.GameLogic.Entities;
-using NitroxModel.DataStructures.Util;
-using NitroxModel.Packets;
-using NitroxModel_Subnautica.DataStructures;
+using Nitrox.Model.Packets;
+using Nitrox.Model.Subnautica.DataStructures;
+using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities;
+using Nitrox.Model.Subnautica.Packets;
 using UnityEngine;
 using UWE;
 
@@ -31,7 +31,7 @@ public class GlobalRootEntitySpawner : SyncEntitySpawner<GlobalRootEntity>
         {
             return false;
         }
-        GameObject gameObject = GameObjectHelper.InstantiateWithId(prefab, entity.Id);
+        GameObject gameObject = GameObjectExtensions.InstantiateWithId(prefab, entity.Id);
         SetupObject(entity, gameObject);
 
         result.Set(gameObject);

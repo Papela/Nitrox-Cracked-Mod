@@ -2,9 +2,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using Nitrox.Model.DataStructures.GameLogic;
 using NitroxClient.GameLogic;
-using NitroxModel.DataStructures.GameLogic;
-using NitroxModel.Helper;
 using UnityEngine;
 
 namespace NitroxPatcher.Patches.Dynamic;
