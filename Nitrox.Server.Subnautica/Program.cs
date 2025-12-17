@@ -579,13 +579,14 @@ public class Program
                 }
             }
 
-            Assembly assembly = ResolveFromLib(args.Name);
-            if (assembly == null && !args.Name.Contains(".resources"))
+            AssemblyName assemblyName = new (args.Name);
+            Assembly loadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName.Name);
+            if (loadedAssembly != null)
             {
-                assembly = Assembly.Load(args.Name);
+                return loadedAssembly;
             }
 
-            return assembly;
+            return ResolveFromLib(args.Name);
         }
 
         private static string GetExecutableDirectory()
