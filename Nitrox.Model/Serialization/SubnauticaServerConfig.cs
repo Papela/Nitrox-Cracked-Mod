@@ -9,7 +9,7 @@ namespace Nitrox.Model.Serialization
     {
         private int maxConnectionsSetting = 100;
 
-        private int initialSyncTimeoutSetting = 300000;
+        private int initialSyncTimeoutSetting = 120000;
 
         [PropertyDescription("Set to true to Cache entities for the whole map on next run. \nWARNING! Will make server load take longer on the cache run but players will gain a performance boost when entering new areas.")]
         public bool CreateFullEntityCache { get; set; } = false;
@@ -71,13 +71,13 @@ namespace Nitrox.Model.Serialization
             }
         }
 
+        [PropertyDescription("Measured in milliseconds")]
         public int InitialSyncTimeout
         {
             get => initialSyncTimeoutSetting;
 
             set
             {
-                Validate.IsTrue(value > 30000, "InitialSyncTimeout must be greater than 30 seconds");
                 initialSyncTimeoutSetting = value;
             }
         }
@@ -100,6 +100,9 @@ namespace Nitrox.Model.Serialization
 
         [PropertyDescription("Possible values:", typeof(Perms))]
         public Perms DefaultPlayerPerm { get; set; } = Perms.PLAYER;
+
+        [PropertyDescription("If true, players using localhost get admin by default - disable if you're using a proxy server")]
+        public bool LocalhostIsAdmin { get; set; } = true;
 
         [PropertyDescription("\nDefault player stats below here")]
         public float DefaultOxygenValue { get; set; } = 45;

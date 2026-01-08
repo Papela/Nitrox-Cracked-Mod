@@ -14,9 +14,9 @@ using Nitrox.Launcher.Models.Services;
 using Nitrox.Launcher.Models.Utils;
 using Nitrox.Launcher.ViewModels.Abstract;
 using Nitrox.Model.Core;
-using Nitrox.Model.Discovery;
-using Nitrox.Model.Discovery.Models;
 using Nitrox.Model.Helper;
+using Nitrox.Model.Platforms.Discovery;
+using Nitrox.Model.Platforms.Discovery.Models;
 using Nitrox.Model.Platforms.OS.Shared;
 
 namespace Nitrox.Launcher.ViewModels;
@@ -32,13 +32,13 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
 
     [ObservableProperty]
     private string programDataFolderDir;
-    
+
     [ObservableProperty]
     private string screenshotsFolderDir;
-    
+
     [ObservableProperty]
     private string savesFolderDir;
-    
+
     [ObservableProperty]
     private string logsFolderDir;
 
@@ -50,9 +50,12 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
 
     [ObservableProperty]
     private bool lightModeEnabled;
-    
+
     [ObservableProperty]
     private bool allowMultipleGameInstances;
+
+    [ObservableProperty]
+    private bool useBigPictureMode;
     
     [ObservableProperty]
     private bool isInReleaseMode;
@@ -63,13 +66,14 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
     internal override async Task ViewContentLoadAsync(CancellationToken cancellationToken = default)
     {
         SelectedGame = new() { PathToGame = NitroxUser.GamePath, Platform = NitroxUser.GamePlatform?.Platform ?? Platform.NONE };
-        LaunchArgs = keyValueStore.GetSubnauticaLaunchArguments(DefaultLaunchArg);
+        LaunchArgs = keyValueStore.GetLaunchArguments(GameInfo.Subnautica, DefaultLaunchArg);
         ProgramDataFolderDir = NitroxUser.AppDataPath;
         ScreenshotsFolderDir = NitroxUser.ScreenshotsPath;
         SavesFolderDir = keyValueStore.GetSavesFolderDir();
         LogsFolderDir = Model.Logger.Log.LogDirectory;
         LightModeEnabled = keyValueStore.GetIsLightModeEnabled();
         AllowMultipleGameInstances = keyValueStore.GetIsMultipleGameInstancesAllowed();
+        UseBigPictureMode = keyValueStore.GetUseBigPictureMode();
         IsInReleaseMode = NitroxEnvironment.IsReleaseMode;
         await SetTargetedSubnauticaPathAsync(SelectedGame.PathToGame).ContinueWithHandleError(ex => LauncherNotifier.Error(ex.Message));
     }
@@ -81,7 +85,6 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
             return;
         }
 
-        NitroxUser.GamePath = path;
         if (LaunchGameViewModel.LastFindSubnauticaTask != null)
         {
             await LaunchGameViewModel.LastFindSubnauticaTask;
@@ -146,7 +149,7 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
     [RelayCommand(CanExecute = nameof(CanSetArguments))]
     private void SetArguments()
     {
-        keyValueStore.SetSubnauticaLaunchArguments(LaunchArgs);
+        keyValueStore.SetLaunchArguments(GameInfo.Subnautica, LaunchArgs);
         SetArgumentsCommand.NotifyCanExecuteChanged();
     }
 
@@ -154,7 +157,7 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
     {
         ShowResetArgsBtn = LaunchArgs != DefaultLaunchArg;
 
-        return LaunchArgs != keyValueStore.GetSubnauticaLaunchArguments(DefaultLaunchArg) && !isResettingArgs;
+        return LaunchArgs != keyValueStore.GetLaunchArguments(GameInfo.Subnautica, DefaultLaunchArg) && !isResettingArgs;
     }
 
     [RelayCommand]
@@ -192,15 +195,28 @@ internal partial class OptionsViewModel(IKeyValueStore keyValueStore, StorageSer
             LauncherNotifier.Error($"Failed to open folder: {ex.Message}");
         }
     }
-    
+
     partial void OnLightModeEnabledChanged(bool value)
     {
         keyValueStore.SetIsLightModeEnabled(value);
         Dispatcher.UIThread.Invoke(() => Application.Current!.RequestedThemeVariant = value ? ThemeVariant.Light : ThemeVariant.Dark);
     }
-    
+
     partial void OnAllowMultipleGameInstancesChanged(bool value)
     {
+        if (value)
+        {
+            UseBigPictureMode = false;
+        }
         keyValueStore.SetIsMultipleGameInstancesAllowed(value);
+    }
+    
+    partial void OnUseBigPictureModeChanged(bool value)
+    {
+        if (value)
+        {
+            AllowMultipleGameInstances = false;
+        }
+        keyValueStore.SetBigPictureMode(value);
     }
 }

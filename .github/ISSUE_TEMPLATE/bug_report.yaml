@@ -6,6 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
+        # This no place to seek help with installation or connection problems. For that visit our [Discord](https://discord.gg/b8vE6zeWSy).
         # This is not the official Nitrox repository. (This is the repository of the unlocked mod)
         ## Before opening an issue, check the FAQ to see if your problem is there.
         
@@ -15,7 +16,8 @@ body:
       label: Which version are you playing on?
       description: If playing on older versions, you should try updating first.
       options:
-        - 1.8.0.1 (Latest release)
+        - 1.8.1.0 (Latest release)
+        - 1.8.0.1
         - 1.8.0.0
         - 1.7.1.0
         - Latest commit (Only for experts)

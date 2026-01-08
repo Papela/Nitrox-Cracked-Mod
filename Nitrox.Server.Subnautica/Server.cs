@@ -5,9 +5,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Nitrox.Model.Core;
+using Nitrox.Model.Extensions;
 using Nitrox.Model.DataStructures.GameLogic;
 using Nitrox.Model.Serialization;
 using Nitrox.Model.Server;
@@ -277,26 +279,36 @@ public class Server
 
     private async Task LogHowToConnectAsync()
     {
-        Task<IPAddress> localIp = Task.Run(NetHelper.GetLanIp);
-        Task<IPAddress> wanIp = NetHelper.GetWanIpAsync();
-        Task<IEnumerable<(IPAddress Address, string NetworkName)>> vpnIps = Task.Run(NetHelper.GetVpnIps);
+        List<string> options = [$"{IPAddress.Loopback} - You (Local)"];
+        List<IPAddress> publicIps = [];
+        foreach ((IPAddress address, NetHelper.MachineIpOrigin origin, string? networkName) in await NetHelper.GetAllKnownIpsAsync())
+        {
+            string? option;
+            switch (origin)
+            {
+                case NetHelper.MachineIpOrigin.LAN:
+                    option = $"{address} - Friends on same internet network (LAN)";
+                    break;
+                case NetHelper.MachineIpOrigin.VPN:
+                    option = $"{address} - Friends using {networkName} (VPN)";
+                    break;
+                case NetHelper.MachineIpOrigin.WAN:
+                    option = $"{{ip_{publicIps.Count}:l}} - Friends on another internet network (requires port forwarding)";
+                    publicIps.Add(address);
+                    break;
+                default:
+                    option = null;
+                    break;
+            }
+            if (option == null)
+            {
+                continue;
+            }
+            options.Add(option);
+        }
 
-        List<string> options = ["127.0.0.1 - You (Local)"];
-        if (await wanIp != null)
-        {
-            options.Add("{ip:l} - Friends on another internet network (Port Forwarding)");
-        }
-        foreach ((IPAddress? vpnAddress, string? vpnName) in await vpnIps)
-        {
-            options.Add($"{vpnAddress} - Friends using {vpnName} (VPN)");
-        }
-        // LAN IP could be null if all Ethernet/Wi-Fi interfaces are disabled.
-        if (await localIp != null)
-        {
-            options.Add($"{localIp.Result} - Friends on same internet network (LAN)");
-        }
-
-        Log.InfoSensitive($"Use IP to connect:{Environment.NewLine}\t{string.Join($"{Environment.NewLine}\t", options)}", wanIp.Result);
+        // Note: keep the object args parameter value. It is required for sensitive logging to work.
+        Log.InfoSensitive($"Use IP to connect:{Environment.NewLine}\t{string.Join($"{Environment.NewLine}\t", options)}", [..publicIps]);
     }
 
     public void StopAndWait(bool shouldSave = true)

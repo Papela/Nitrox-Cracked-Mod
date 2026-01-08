@@ -5,8 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Nitrox.Model.Core;
-using Nitrox.Model.Discovery;
-using Nitrox.Model.Discovery.InstallationFinders.Core;
 using Nitrox.Model.Platforms.OS.Shared;
 using Nitrox.Model.Platforms.Store;
 using Nitrox.Model.Platforms.Store.Interfaces;
@@ -19,7 +17,7 @@ public static class NitroxUser
     private const string PREFERRED_GAMEPATH_KEY = "PreferredGamePath";
     private static string? appDataPath;
     private static string? launcherPath;
-    private static string? gamePath;
+    private static string gamePath = "";
     private static string? executableRootPath;
     private static string? executablePath;
     private static string? assetsPath;
@@ -140,80 +138,17 @@ public static class NitroxUser
         set => KeyValueStore.Instance.SetValue(PREFERRED_GAMEPATH_KEY, value);
     }
 
-    private static IGamePlatform? gamePlatform;
-    public static event Action? GamePlatformChanged;
+    public static IGamePlatform? GamePlatform { get; private set; }
 
-    public static IGamePlatform? GamePlatform
+    public static string GamePath => string.IsNullOrEmpty(gamePath) ? string.Empty : gamePath;
+
+    public static void SetGamePathAndPlatform(string path, IGamePlatform? platform)
     {
-        get
-        {
-            if (gamePlatform == null)
-            {
-                _ = GamePath; // Ensure gamePath is set
-            }
-            return gamePlatform;
-        }
-        set
-        {
-            if (gamePlatform != value)
-            {
-                gamePlatform = value;
-                GamePlatformChanged?.Invoke();
-            }
-        }
+        gamePath = Path.GetFullPath(path);
+        GamePlatform = platform ?? GamePlatforms.GetPlatformByGameDir(path);
     }
 
-    public static string GamePath
-    {
-        get
-        {
-            if (!string.IsNullOrEmpty(gamePath))
-            {
-                return gamePath;
-            }
-
-            string? cliGamePath = NitroxEnvironment.CommandLineArgs.GetCommandArgs("--game-path").FirstOrDefault();
-            if (Directory.Exists(cliGamePath) && Path.IsPathRooted(cliGamePath))
-            {
-                GamePlatform = GamePlatforms.GetPlatformByGameDir(cliGamePath);
-                return gamePath = cliGamePath;
-            }
-            if (cliGamePath != null)
-            {
-                throw new DirectoryNotFoundException($"Game directory not found at user-specified location: {cliGamePath}");
-            }
-
-            List<GameFinderResult> finderResults = GameInstallationFinder.Instance.FindGame(GameInfo.Subnautica).TakeUntilInclusive(r => r is { IsOk: false }).ToList();
-            GameFinderResult potentiallyValidResult = finderResults.LastOrDefault();
-            if (potentiallyValidResult?.IsOk == true)
-            {
-                Log.Debug($"Game installation was found by {potentiallyValidResult.FinderName} at '{potentiallyValidResult.Path}'");
-                gamePath = potentiallyValidResult.Path;
-                GamePlatform = GamePlatforms.GetPlatformByGameDir(gamePath);
-                return gamePath;
-            }
-
-            Log.Error($"Could not locate Subnautica installation directory: {Environment.NewLine}{string.Join(Environment.NewLine, finderResults.Select(i => $"{i.FinderName}: {i.ErrorMessage}"))}");
-            return string.Empty;
-        }
-        set
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return;
-            }
-            if (!Directory.Exists(value))
-            {
-                throw new ArgumentException("Given path is an invalid directory");
-            }
-
-            // Ensures the path looks alright (no mixed / and \ path separators)
-            gamePath = Path.GetFullPath(value);
-            GamePlatform = GamePlatforms.GetPlatformByGameDir(gamePath);
-        }
-    }
-
-    public static string? ExecutableRootPath
+    public static string ExecutableRootPath
     {
         get
         {
@@ -224,10 +159,10 @@ public static class NitroxUser
             string exePath = ExecutableFilePath;
             if (exePath == null)
             {
-                return null;
+                throw new Exception("Executable root path is unavailable");
             }
 
-            return executableRootPath = Path.GetDirectoryName(exePath);
+            return executableRootPath = Path.GetDirectoryName(exePath) ?? throw new Exception("Executable root path is unavailable");
         }
     }
 
@@ -250,6 +185,10 @@ public static class NitroxUser
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 path = new Uri(path).LocalPath;
+            }
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                path = Path.Combine(Path.GetDirectoryName(path) ?? throw new InvalidOperationException($"Failed to get directory from path: '{path}'"), Path.GetFileNameWithoutExtension(path));
             }
             return executablePath = path;
         }
