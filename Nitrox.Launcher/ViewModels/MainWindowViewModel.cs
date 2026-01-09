@@ -90,10 +90,10 @@ internal partial class MainWindowViewModel : ViewModelBase, IRoutingScreen
             if (!NitroxEnvironment.IsReleaseMode)
             {
                 // Set debug default options here.
+                keyValueStore.SetIsMultipleGameInstancesAllowed(true);
                 LauncherNotifier.Info("You're now using Nitrox Unlocked DEV build");
             }
-            keyValueStore.SetIsMultipleGameInstancesAllowed(true);
-
+            
             Task.Run(async () =>
             {
                 if (!NetHelper.HasInternetConnectivity())
