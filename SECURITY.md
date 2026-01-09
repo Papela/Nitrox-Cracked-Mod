@@ -19,7 +19,7 @@ As this project is still rapidly evolving and in a beta state we will only provi
 
 ## Reporting a Vulnerability
 
-To discreetly report a vulnerability please get in touch with one of our support staff on our [discord](https://discord.gg/E8B4X9s).
+To discreetly report a vulnerability please get in touch with one of our support staff on our [discord](https://discord.gg/b8vE6zeWSy).
 Your request will be forwarded to one of the devs which will get in touch with you privately to further discuss and investigate the issue. \
 Once the issue is reproduced by the team, work will be started on a fix. You will be informed once the issue has been fixed and when the fix was included in a new release. \
 You are only allowed to publicly disclose the vulnerability one week after the mentioned release to give the users time to update their software.

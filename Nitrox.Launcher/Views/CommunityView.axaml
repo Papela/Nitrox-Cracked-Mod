@@ -61,17 +61,19 @@
                         <Panel>
                             <Button
                                 Classes="anycontent"
+                                Command="{Binding DiscordLinkCommand}"
                                 ToolTip.Tip="Join Discord Server">
                                 <Border Background="#5865F2">
                                     <Svg Path="/Assets/Icons/brand/discord.svg" />
                                 </Border>
                             </Button>
+                            <Button
+                                Command="{Binding DiscordLinkCommand}"
+                                Content="Join Discord"
+                                ToolTip.Tip="Join Discord Server (Unofficial)" />
                         </Panel>
-                        <TextBlock Text="Discord" />
-                        <TextBlock>
-                            <Run Text="Contact the person who created the unlocked version from his discord user: "/>
-                            <Run FontWeight="Bold" Text="Papela"/>
-                        </TextBlock>
+                        <TextBlock Text="Discord (Unofficial)" />
+                        <TextBlock Text="Join our Nitrox Unlocked Discord server (not the official Nitrox) to find servers to play on, get help, and much more." />
                     </StackPanel>
                 </Border>
                 <Border>
