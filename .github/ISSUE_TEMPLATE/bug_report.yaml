@@ -1,13 +1,15 @@
 name: Bug Report
 description: File a bug or crash report
 title: "Please write an informative title describing the bug in a few words"
-labels: ["Type: bug", "Status: to verify"]
+labels: ["Type: bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        # This is not the official Nitrox repository. (This is the repository of the unlocked mod)
-        ## Before opening an issue, check the FAQ to see if your problem is there.
+        # This no place to seek help with installation or connection problems. For that visit our [Discord](https://discord.gg/b8vE6zeWSy).
+        # This is not the official Nitrox repository.
+        ## Thanks for filling out a bug report. Please be sure that a similar issue wasn't already created by searching [here](https://github.com/Papela/Nitrox-Cracked-Mod/issues?q=is%3Aissue) with general keywords. If it's a new issue please fill out as much detail as possible.
+        ## Before opening an issue, check on Discord to see if your problem is there.
         
   - type: dropdown
     id: nitrox_version
@@ -15,7 +17,8 @@ body:
       label: Which version are you playing on?
       description: If playing on older versions, you should try updating first.
       options:
-        - 1.8.0.1 (Latest release)
+        - 1.8.1.0 (Latest release)
+        - 1.8.0.1
         - 1.8.0.0
         - 1.7.1.0
         - Latest commit (Only for experts)
@@ -33,17 +36,12 @@ body:
         - MacOS (currently not distributed, don't file any reports if your are using this)
     validations:
       required: true
-  - type: dropdown
-    id: store_type
+  - type: input
+    id: game_version
     attributes:
-      label: On which platform did you buy Subnautica?
-      description: Please select your platform/store with which you are normally starting Subnautica.
-      options:
-        - Steam
-        - Epic
-        - Microsoft Store
-        - Discord
-        - Other ;)
+      label: Which version of Subnautica are you using?
+      description: You can find this info in the main menu of the game at the top right.
+      placeholder: "For example: Jun.-2025 (82304)"
     validations:
       required: true
   - type: textarea

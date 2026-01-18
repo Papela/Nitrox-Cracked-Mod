@@ -15,6 +15,7 @@ using System.Threading;
 using Nitrox.Model.Core;
 using Nitrox.Model.DataStructures;
 using Nitrox.Model.DataStructures.GameLogic;
+using Nitrox.Model.Platforms.Discovery;
 using Nitrox.Server.Subnautica.Models.Commands.Processor;
 
 namespace Nitrox.Server.Subnautica;
@@ -22,7 +23,6 @@ namespace Nitrox.Server.Subnautica;
 [SuppressMessage("Usage", "DIMA001:Dependency Injection container is used directly")]
 public class Program
 {
-    private static Lazy<string>? gameInstallDir;
     private static readonly CircularBuffer<string> inputHistory = new(1000);
     private static int currentHistoryIndex;
     private static readonly CancellationTokenSource serverCts = new();
@@ -79,9 +79,11 @@ public class Program
 
             Stopwatch watch = Stopwatch.StartNew();
 
-            // Allow game path to be given as command argument
-            gameInstallDir = new Lazy<string>(() => NitroxUser.GamePath);
-            Log.Info($"Using game files from: \'{gameInstallDir.Value}\'");
+            if (!GameInstallationFinder.FindGameCached(GameInfo.Subnautica))
+            {
+                throw new DirectoryNotFoundException("Could not find Subnautica installation.");
+            }
+            Log.Info($"Using game files from: \'{NitroxUser.GamePath}\'");
 
             // TODO: Fix DI to not be slow (should not use IO in type constructors). Instead, use Lazy<T> (et al). This way, cancellation can be faster.
             NitroxServiceLocator.InitializeDependencyContainer(new SubnauticaServerAutoFacRegistrar());
@@ -164,7 +166,7 @@ public class Program
     private static void CloseWindowHandler(PosixSignalContext context)
     {
         context.Cancel = false;
-        serverCts?.Cancel();
+        serverCts.Cancel();
     }
 
     /// <summary>
@@ -376,7 +378,7 @@ public class Program
         }
 
         ipc.StartReadingCommands(command => commandQueue.Enqueue(command), ct);
-        
+
         if (!Console.IsInputRedirected)
         {
             // Important to not hang process: keep command handler on the main thread when input not redirected (i.e. don't Task.Run)
@@ -507,106 +509,5 @@ public class Program
         }
 
         Environment.Exit(1);
-    }
-
-    private static class AssemblyResolver
-    {
-        private static string currentExecutableDirectory;
-        private static readonly Dictionary<string, AssemblyCacheEntry> resolvedAssemblyCache = [];
-
-        public static Assembly? Handler(object sender, ResolveEventArgs args)
-        {
-            static Assembly? ResolveFromLib(ReadOnlySpan<char> dllName)
-            {
-                dllName = dllName.Slice(0, Math.Max(dllName.IndexOf(','), 0));
-                if (dllName.IsEmpty)
-                {
-                    return null;
-                }
-                if (!dllName.EndsWith(".dll"))
-                {
-                    dllName = string.Concat(dllName, ".dll");
-                }
-                if (dllName.EndsWith(".resources.dll"))
-                {
-                    return null;
-                }
-                string dllNameStr = dllName.ToString();
-                // If available, return cached assembly
-                if (resolvedAssemblyCache.TryGetValue(dllNameStr, out AssemblyCacheEntry cacheEntry) && cacheEntry is { Assembly: { } cachedAssembly })
-                {
-                    return cachedAssembly;
-                }
-                if (cacheEntry == null)
-                {
-                    cacheEntry = new AssemblyCacheEntry(0, null);
-                    resolvedAssemblyCache[dllNameStr] = cacheEntry;
-                }
-
-                // Load DLLs where this program (exe) is located
-                string dllPath = Path.Combine(GetExecutableDirectory(), "lib", dllNameStr);
-                // Prefer to use Newtonsoft dll from game instead of our own due to protobuf issues. TODO: Remove when we do our own deserialization of game data instead of using the game's protobuf.
-                if (dllPath.IndexOf("Newtonsoft.Json.dll", StringComparison.OrdinalIgnoreCase) >= 0 || !File.Exists(dllPath))
-                {
-                    if (gameInstallDir != null)
-                    {
-                        // Try find game managed libraries
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                        {
-                            dllPath = Path.Combine(gameInstallDir.Value, "Resources", "Data", "Managed", dllNameStr);
-                        }
-                        else
-                        {
-                            dllPath = Path.Combine(gameInstallDir.Value, "Subnautica_Data", "Managed", dllNameStr);
-                        }
-                    }
-                }
-
-                try
-                {
-                    // Read assemblies as bytes as to not lock the file so that Nitrox can patch assemblies while server is running.
-                    cacheEntry.Assembly = Assembly.Load(File.ReadAllBytes(dllPath));
-                    return cacheEntry.Assembly;
-                }
-                catch
-                {
-                    cacheEntry.Attempts++;
-                    if (cacheEntry.Attempts >= 5)
-                    {
-                        throw new FileNotFoundException($"Failed to load DLL '{dllName}' at: {dllPath}");
-                    }
-                    return null;
-                }
-            }
-
-            Assembly assembly = ResolveFromLib(args.Name);
-            if (assembly == null && !args.Name.Contains(".resources"))
-            {
-                assembly = Assembly.Load(args.Name);
-            }
-
-            return assembly;
-        }
-
-        private static string GetExecutableDirectory()
-        {
-            if (currentExecutableDirectory != null)
-            {
-                return currentExecutableDirectory;
-            }
-            string pathAttempt = Assembly.GetEntryAssembly()?.Location;
-            if (string.IsNullOrWhiteSpace(pathAttempt))
-            {
-                using Process proc = Process.GetCurrentProcess();
-                pathAttempt = proc.MainModule?.FileName;
-            }
-            return currentExecutableDirectory = new Uri(Path.GetDirectoryName(pathAttempt ?? ".") ?? Directory.GetCurrentDirectory()).LocalPath;
-        }
-
-        private record AssemblyCacheEntry(int Attempts, Assembly? Assembly)
-        {
-            public int Attempts { get; set; } = Attempts;
-            public Assembly? Assembly { get; set; } = Assembly;
-        }
     }
 }

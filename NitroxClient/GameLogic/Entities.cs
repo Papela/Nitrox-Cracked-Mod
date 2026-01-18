@@ -11,7 +11,6 @@ using NitroxClient.GameLogic.Spawning.Metadata;
 using NitroxClient.GameLogic.Spawning.WorldEntities;
 using NitroxClient.MonoBehaviours;
 using Nitrox.Model.DataStructures;
-using Nitrox.Model.Packets;
 using Nitrox.Model.Subnautica.DataStructures.GameLogic;
 using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities;
 using Nitrox.Model.Subnautica.DataStructures.GameLogic.Entities.Bases;
@@ -71,7 +70,7 @@ namespace NitroxClient.GameLogic
             entitySpawnersByType[typeof(RadiationLeakEntity)] = new RadiationLeakEntitySpawner(timeManager);
             entitySpawnersByType[typeof(ModuleEntity)] = new ModuleEntitySpawner(this);
             entitySpawnersByType[typeof(GhostEntity)] = new GhostEntitySpawner();
-            entitySpawnersByType[typeof(OxygenPipeEntity)] = new OxygenPipeEntitySpawner(this, (WorldEntitySpawner)entitySpawnersByType[typeof(WorldEntity)]);
+            entitySpawnersByType[typeof(OxygenPipeEntity)] = new OxygenPipeEntitySpawner((WorldEntitySpawner)entitySpawnersByType[typeof(WorldEntity)]);
             entitySpawnersByType[typeof(PlacedWorldEntity)] = new PlacedWorldEntitySpawner((WorldEntitySpawner)entitySpawnersByType[typeof(WorldEntity)]);
             entitySpawnersByType[typeof(InteriorPieceEntity)] = new InteriorPieceEntitySpawner(this, entityMetadataManager);
             entitySpawnersByType[typeof(GeyserWorldEntity)] = entitySpawnersByType[typeof(WorldEntity)];
@@ -283,14 +282,10 @@ namespace NitroxClient.GameLogic
                 grownPlant.seed.AliveOrNull()?.FreeSpot();
                 return;
             }
-
             if (gameObject.TryGetComponent(out Pickupable pickupable))
             {
-                using (PacketSuppressor<ModuleRemoved>.Suppress())
-                {
-                    // Running this now means it won't get ran in OnDestroy() at the end of the frame, so no packets get sent
-                    pickupable.SetInventoryItem(null);
-                }
+                // Running this now means it won't get ran in OnDestroy() at the end of the frame, so no packets get sent
+                pickupable.SetInventoryItem(null);
             }
 
             UnityEngine.Object.Destroy(gameObject);

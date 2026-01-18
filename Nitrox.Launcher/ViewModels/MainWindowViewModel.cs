@@ -18,6 +18,7 @@ using Nitrox.Launcher.ViewModels.Abstract;
 using Nitrox.Model.Core;
 using Nitrox.Model.Helper;
 using Nitrox.Model.Logger;
+using Nitrox.Model.Platforms.Discovery;
 
 namespace Nitrox.Launcher.ViewModels;
 
@@ -86,14 +87,15 @@ internal partial class MainWindowViewModel : ViewModelBase, IRoutingScreen
         {
             bool lightModeEnabled = keyValueStore.GetIsLightModeEnabled();
             Dispatcher.UIThread.Invoke(() => Application.Current!.RequestedThemeVariant = lightModeEnabled ? ThemeVariant.Light : ThemeVariant.Dark);
+            GameInstallationFinder.FindGameCached(GameInfo.Subnautica);
 
             if (!NitroxEnvironment.IsReleaseMode)
             {
                 // Set debug default options here.
+                keyValueStore.SetIsMultipleGameInstancesAllowed(true);
                 LauncherNotifier.Info("You're now using Nitrox Unlocked DEV build");
             }
-            keyValueStore.SetIsMultipleGameInstancesAllowed(true);
-
+            
             Task.Run(async () =>
             {
                 if (!NetHelper.HasInternetConnectivity())
@@ -104,7 +106,7 @@ internal partial class MainWindowViewModel : ViewModelBase, IRoutingScreen
                 UpdateAvailableOrUnofficial = await updatesViewModel.IsNitroxUpdateAvailableAsync();
             });
 
-            LauncherNotifier.Success("You are using a Unlocked Version made by Papela.");
+            LauncherNotifier.Success("You are using a Unlocked Version ;)");
 
             _ = this.ShowAsync(launchGameViewModel).ContinueWithHandleError(ex => LauncherNotifier.Error(ex.Message));
         }

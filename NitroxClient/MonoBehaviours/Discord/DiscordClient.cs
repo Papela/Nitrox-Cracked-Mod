@@ -14,7 +14,7 @@ namespace NitroxClient.MonoBehaviours.Discord;
 
 public class DiscordClient : MonoBehaviour
 {
-    private const long CLIENT_ID = 405122994348752896;
+    private const long CLIENT_ID = 1459204611528331370;
     private const int RETRY_INTERVAL = 60;
 
     private static DiscordClient? main;
