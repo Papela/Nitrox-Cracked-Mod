@@ -136,17 +136,25 @@
                         </Style>
                     </StackPanel.Styles>
 
-                    <TextBlock Text="AUTHOR" />
+                    <TextBlock Text="UNLOCKED BY" />
+                    <controls:RichTextBlock>
+                        [Papela](github.com/Papela)
+                    </controls:RichTextBlock>
+                    <TextBlock Text="UNLOCK HELPERS" />
+                    <controls:RichTextBlock>
+                        [throwaway1129792](github.com/throwaway1129792), [fazrigading](github.com/fazrigading)
+                    </controls:RichTextBlock>
+                    <TextBlock Text="ORIGINAL AUTHOR" />
                     <controls:RichTextBlock>[Sunrunner](github.com/Sunrunner37)</controls:RichTextBlock>
                     <!--  Active contributors which have higher role than junior.  -->
-                    <TextBlock Text="CONTRIBUTORS" />
+                    <TextBlock Text="ORIGINAL CONTRIBUTORS" />
                     <WrapPanel>
                         <TextBlock Margin="0 0 12 0" VerticalAlignment="Center" Text="Tornac, Clément, Jannify, _HeN_, spacemonkeyy, Ohm, NinjaPedroX, Meas" />
                         <Button Padding="5 2" Content="See contributions made in the last year" Command="{Binding OpenContributionsOfYearCommand}" />
                     </WrapPanel>
-                    <TextBlock Text="STAFF" />
+                    <TextBlock Text="ORIGINAL STAFF" />
                     <TextBlock>
-                        Papela (The one who unlocked it) ;), Werewolfs, Shalix, SavageJay, and a big thanks to the discord support team (Arctic-Peepers, Peepers)
+                        Werewolfs, Shalix, SavageJay, and a big thanks to the discord support team (Arctic-Peepers, Peepers)
                     </TextBlock>
                     <TextBlock Text="DESIGN" />
                     <controls:RichTextBlock>

@@ -106,7 +106,7 @@ internal partial class MainWindowViewModel : ViewModelBase, IRoutingScreen
                 UpdateAvailableOrUnofficial = await updatesViewModel.IsNitroxUpdateAvailableAsync();
             });
 
-            LauncherNotifier.Success("You are using a Unlocked Version made by Papela.");
+            LauncherNotifier.Success("You are using a Unlocked Version ;)");
 
             _ = this.ShowAsync(launchGameViewModel).ContinueWithHandleError(ex => LauncherNotifier.Error(ex.Message));
         }
